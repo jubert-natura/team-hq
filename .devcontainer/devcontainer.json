@@ -1,0 +1,17 @@
+{
+  "name": "Team HQ",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-20-bookworm",
+  "postCreateCommand": "npm install",
+  "postAttachCommand": "npm run dev",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "Team HQ", "onAutoForward": "openBrowser" }
+  },
+  "secrets": {
+    "SLACK_BOT_TOKEN": { "description": "Slack Bot User OAuth Token (xoxb-...)" },
+    "CLICKUP_API_TOKEN": { "description": "ClickUp personal API token (pk_...)" },
+    "OWNER_EMAIL": { "description": "Your email in Slack and ClickUp" },
+    "HQ_PASSWORD": { "description": "Password for the HQ web page" }
+  },
+  "customizations": { "vscode": { "extensions": ["dbaeumer.vscode-eslint"] } }
+}

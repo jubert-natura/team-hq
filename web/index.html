@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Team HQ</title>
+<link rel="stylesheet" href="/styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app" id="app">
+  <nav class="nav" aria-label="Main">
+    <div class="brand"><span class="logo">HQ</span><span><b>Team HQ</b><small>Virtual operations center</small></span></div>
+    <div class="ngroup">Workspace</div>
+    <div id="navWork"></div>
+    <div class="ngroup">Management</div>
+    <div id="navMgmt"></div>
+    <div class="conns">
+      <div class="ngroup">Connected</div>
+      <button class="cpill" data-nav="integrations">ClickUp<em id="pill-cu">…</em></button>
+      <button class="cpill" data-nav="integrations">Slack<em id="pill-sl">…</em></button>
+    </div>
+  </nav>
+
+  <main class="main">
+    <section class="stage" id="stage">
+      <div class="labels" id="labels"></div>
+      <div class="hover" id="hover" aria-hidden="true"></div>
+      <div class="hqcard glass"><b>Headquarters</b><span id="hqline"></span><div class="stats" id="stats"></div></div>
+      <div class="ctrls"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="reset">Reset view</button></div>
+      <div class="cmd glass">
+        <label for="cmd">Give the team an instruction</label>
+        <div class="row"><textarea id="cmd" rows="1" placeholder="Type what you want done…"></textarea><button class="btn primary" id="send">Send</button></div>
+        <span class="hint" id="routeHint">Creates a ClickUp task for the right teammate.</span>
+      </div>
+    </section>
+    <section class="view" id="view" hidden></section>
+    <aside class="drawer" id="drawer" aria-label="Worker details"><div class="dinner" id="dinner"></div></aside>
+    <div class="banner" id="banner"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

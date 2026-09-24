@@ -1,0 +1,17 @@
+{
+  "name": "team-hq",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Virtual HQ: a 3D command center over Slack (people) and ClickUp (work).",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node test/smoke.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}
