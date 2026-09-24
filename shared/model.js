@@ -3,8 +3,9 @@
 
 export const HQ_STATES = ['todo', 'in_progress', 'in_review', 'changes_requested', 'blocked', 'approved', 'cancelled'];
 export const STATE_LBL = { todo: 'Up next', in_progress: 'Working', in_review: 'In review', changes_requested: 'Changes requested', blocked: 'Blocked', approved: 'Done', cancelled: 'Cancelled' };
-export const STATUS_LBL = { working: 'Working', online: 'Online', meeting: 'Meeting', break: 'Break', away: 'Away', offline: 'Offline' };
-export const STATUS_HEX = { working: '#2E9E5B', online: '#3F7CDB', meeting: '#7B5EA7', break: '#2A9D8F', away: '#A9B1BC', offline: '#5B6372' };
+export const STATUS_LBL = { working: 'Working', online: 'Online', focus: 'Focus', meeting: 'Meeting', break: 'Break', away: 'Away', offline: 'Offline' };
+export const STATUS_HEX = { working: '#2E9E5B', online: '#3F7CDB', focus: '#D9622B', meeting: '#7B5EA7', break: '#2A9D8F', away: '#A9B1BC', offline: '#5B6372' };
+export const MANUAL_STATUSES = ['none', 'focus', 'meeting', 'break', 'offline'];
 export const PRIO = { 1: 'Urgent', 2: 'High', 3: 'Normal', 4: 'Low' };
 const HOUR = 3600000;
 
@@ -36,15 +37,27 @@ export function cuStatusFor(db, listId, state) {
   return d ? d.clickup_status : null;
 }
 export const tasksOf = (db, id) => db.tasks.filter(t => t.assignee === id);
-export const isMeetingStatus = w => /meeting|call|zoom|huddle|interview/i.test(w.slack_status_text || '') || [':calendar:', ':spiral_calendar_pad:', ':headphones:', ':date:'].includes(w.slack_status_emoji);
+// Slack status text / emoji -> HQ status. Checked in this order: meeting, focus, break.
+const MEET_RX = /meeting|\bcall\b|zoom|huddle|interview|stand-?up|\bsync\b|1:1/i;
+const MEET_EMO = [':calendar:', ':spiral_calendar_pad:', ':date:', ':headphones:', ':telephone_receiver:', ':phone:', ':video_camera:', ':zoom:', ':google_meet:', ':studio_microphone:'];
+const FOCUS_RX = /focus|deep ?work|heads.?down|do not disturb|\bdnd\b|concentrat|in the zone|coding|writing/i;
+const FOCUS_EMO = [':gear:', ':dart:', ':brain:', ':technologist:', ':male-technologist:', ':female-technologist:', ':no_bell:', ':mute:', ':red_circle:', ':no_entry:', ':no_entry_sign:', ':lock:', ':computer:'];
+const BREAK_RX = /\b(break|lunch|breakfast|dinner|eat(ing)?|food|snack|coffee|tea|cook(ing)?|pantry|workout|gym|walk(ing)?|errands?|rest(ing)?|nap(ping)?|brb|be right back|pray(er|ing)?)\b/i;
+const BREAK_EMO = [':coffee:', ':tea:', ':fork_and_knife:', ':knife_fork_plate:', ':hamburger:', ':pizza:', ':sandwich:', ':ramen:', ':bento:', ':stew:', ':curry:', ':spaghetti:', ':cup_with_straw:', ':green_salad:', ':doughnut:', ':taco:', ':burrito:', ':bowl_with_spoon:', ':running:', ':walking:', ':weight_lifter:', ':person_in_lotus_position:', ':dash:'];
+export const isMeetingStatus = w => MEET_RX.test(w.slack_status_text || '') || MEET_EMO.includes(w.slack_status_emoji);
+export const isFocusStatus = w => !!w.slack_dnd || FOCUS_RX.test(w.slack_status_text || '') || FOCUS_EMO.includes(w.slack_status_emoji);
+export const isBreakStatus = w => BREAK_RX.test(w.slack_status_text || '') || BREAK_EMO.includes(w.slack_status_emoji);
 
-export function displayStatus(db, w, now = Date.now()) {
-  if (w.manual_status === 'offline') return 'offline';
-  if (w.manual_status === 'meeting') return 'meeting';
-  if (w.manual_status === 'break') return 'break';
+/**
+ * HQ status. A status set in HQ wins, then Slack presence (away = offline, like the hollow dot in Slack),
+ * then the Slack status (meeting / focus / break), then an in-progress task (working), else online.
+ */
+export function displayStatus(db, w) {
+  if (w.manual_status && w.manual_status !== 'none') return w.manual_status;
+  if (w.slack_presence === 'away') return 'offline';
   if (isMeetingStatus(w)) return 'meeting';
-  if (w.slack_presence === 'away' && now - (w.last_seen_at || 0) > 4 * HOUR) return 'offline';
-  if (w.slack_presence === 'away') return 'away';
+  if (isFocusStatus(w)) return 'focus';
+  if (isBreakStatus(w)) return 'break';
   if (tasksOf(db, w.id).some(t => ['in_progress', 'changes_requested'].includes(hqState(db, t)))) return 'working';
   return 'online';
 }
@@ -57,21 +70,36 @@ export function currentTask(db, id) {
 export function nextTask(db, id) {
   return tasksOf(db, id).filter(t => hqState(db, t) === 'todo').sort((a, b) => byDue(a, b) || a.priority - b.priority)[0] || null;
 }
+/** All ClickUp accounts of a person (a few people have two). */
+export const cuIds = w => (w ? [w.clickup_user_id, ...(w.clickup_alt_ids || [])].filter(Boolean) : []);
+/** You are on a task when you created it or watch it in ClickUp. Tasks without that data (demo) count as yours. */
+export function involvesOwner(db, t) {
+  const own = owner(db); if (!own) return false;
+  if (t.creator_id === undefined && !t.watcher_ids) return true;
+  const ids = cuIds(own);
+  return ids.includes(t.creator_id) || (t.watcher_ids || []).some(id => ids.includes(id));
+}
+/** Only the assignee can move a task's status. */
+export const canEditTask = (db, t) => { const own = owner(db); return !!own && t.assignee === own.id; };
+
 export const openNeeds = db => db.needs.filter(n => n.state !== 'resolved');
 export const unreadNeeds = db => db.needs.filter(n => n.state === 'open');
 export const attention = (db, id) => openNeeds(db).filter(n => n.from === id).length;
 export function lastActivity(db, id) { for (let i = db.activity.length - 1; i >= 0; i--) if (db.activity[i].worker === id) return db.activity[i]; return null; }
 export const openCount = (db, id) => tasksOf(db, id).filter(t => !['approved', 'cancelled'].includes(hqState(db, t))).length;
 
-/** Open/resolve Approval + Decision items from task state. Idempotent. */
+/**
+ * Open/resolve Approval + Decision items from task state. Idempotent.
+ * Only tasks you are on (created or watching) reach you, so the feed is yours, not the whole workspace's.
+ */
 export function reconcileNeeds(db, now = Date.now()) {
   const own = owner(db);
   for (const t of db.tasks) {
     const st = hqState(db, t);
-    const from = worker(db, t.assignee);
+    const from = worker(db, t.assignee), mine = involvesOwner(db, t);
     const want = {
-      approval: st === 'in_review' && !!from && !from.is_owner,
-      decision: st === 'blocked' && ((t.tags || []).includes('needs-owner') || (own && t.assignee === own.id))
+      approval: st === 'in_review' && !!from && !from.is_owner && mine,
+      decision: st === 'blocked' && (((t.tags || []).includes('needs-owner') && mine) || (!!own && t.assignee === own.id))
     };
     for (const type of ['approval', 'decision']) {
       const src = `task:${t.id}:${type}`;

@@ -3,6 +3,7 @@ import * as slack from './slack.js';
 import * as cu from './clickup.js';
 import { db, hq, applyChange, rebuildMap, logEvent, logError, persist } from './store.js';
 import { autoMapStatus, owner as getOwner, worker, task as getTask } from '../shared/model.js';
+import { loadEmoji, resolveEmoji, emojifyText, setCustomEmoji } from './emoji.js';
 
 const PALETTE = ['#3F7CAC', '#C0504D', '#5E8C3F', '#E09A2E', '#7B5EA7', '#2A9D8F', '#D1495B', '#4D5B6B', '#8C5A3C', '#3D405B', '#B5651D', '#1B998B'];
 const colorFor = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return PALETTE[h % PALETTE.length]; };
@@ -16,6 +17,7 @@ export async function fullSync() {
   try {
     if (slack.slackEnabled()) {
       if (!db.meta.slack_team_id) db.meta.slack_team_id = await slack.teamId();
+      await refreshCustomEmoji();
       slackPeople = await slack.listPeople();
     }
     if (cu.clickupEnabled()) {
@@ -44,7 +46,7 @@ async function refreshLists(tasks) {
       catch (e) { // fall back to statuses seen on tasks
         const seen = tasks.filter(t => String(t.list && t.list.id) === id).map(t => t.status);
         const uniq = [...new Map(seen.map(s => [s.status, s])).values()];
-        c = { data: { id, name: (tasks.find(t => String(t.list && t.list.id) === id).list || {}).name || id, statuses: uniq.map(s => ({ status: s.status, type: s.type })) }, at: Date.now() };
+        c = { data: { id, name: (tasks.find(t => String(t.list && t.list.id) === id).list || {}).name || id, statuses: uniq.map(s => ({ status: s.status, type: s.type, color: s.color || '' })) }, at: Date.now() };
         logError('list ' + id, e);
       }
     }
@@ -53,6 +55,8 @@ async function refreshLists(tasks) {
   db.lists = lists; rebuildMap();
 }
 
+const normName = s => String(s || '').toLowerCase().normalize('NFKD').replace(/[^a-z]/g, '');
+
 function buildWorkers() {
   const ownerEmail = (process.env.OWNER_EMAIL || '').toLowerCase();
   const prev = new Map(db.workers.map(w => [w.id, w]));
@@ -60,25 +64,41 @@ function buildWorkers() {
   const cuByEmail = new Map(cuMembers.filter(m => m.email).map(m => [m.email, m]));
   const cuById = new Map(cuMembers.map(m => [m.clickup_user_id, m]));
   const usedCu = new Set();
-  const onlyMatched = cu.clickupEnabled() && process.env.SLACK_ONLY_MATCHED !== 'false';
+  // Everyone in Slack shows up by default; SLACK_ONLY_MATCHED=true hides people with no ClickUp account.
+  const onlyMatched = cu.clickupEnabled() && process.env.SLACK_ONLY_MATCHED === 'true';
   for (const p of slackPeople) {
     const manual = hq.matches[p.slack_user_id];
     const m = (manual && cuById.get(manual)) || (p.email && cuByEmail.get(p.email));
-    if (onlyMatched && !m && p.email !== ownerEmail) continue;
     if (m) usedCu.add(m.clickup_user_id);
     const id = 'sl_' + p.slack_user_id, old = prev.get(id) || {};
-    out.push({
-      id, name: p.name, role: p.role || '', department: departmentFor(p), color: old.color || colorFor(p.slack_user_id), avatar_url: p.avatar_url || (m && m.avatar_url) || '',
-      email: p.email, is_owner: !!ownerEmail && p.email === ownerEmail, slack_user_id: p.slack_user_id, clickup_user_id: m ? m.clickup_user_id : null,
-      match: m ? (manual ? 'manual' : 'email') : 'slack only', slack_presence: old.slack_presence || 'active', slack_status_text: p.slack_status_text, slack_status_emoji: p.slack_status_emoji,
-      manual_status: hq.manual[id] || 'none', last_seen_at: old.last_seen_at || Date.now()
-    });
+    const w = {
+      id, name: p.name, real_name: p.real_name, role: p.role || '', department: departmentFor(p), color: old.color || colorFor(p.slack_user_id), avatar_url: p.avatar_url || (m && m.avatar_url) || '',
+      email: p.email, is_owner: !!ownerEmail && p.email === ownerEmail, slack_user_id: p.slack_user_id, clickup_user_id: m ? m.clickup_user_id : null, clickup_alt_ids: [],
+      match: m ? (manual ? 'manual' : 'email') : 'slack only', is_guest: p.is_guest,
+      // Presence is unknown until the first poll; start as away so nobody shows online by mistake.
+      slack_presence: old.slack_presence || 'away', slack_dnd: !!old.slack_dnd,
+      slack_status_text: emojifyText(p.slack_status_text), slack_status_emoji: p.slack_status_emoji, slack_status_icon: resolveEmoji(p.slack_status_emoji),
+      manual_status: hq.manual[id] || 'none', last_seen_at: old.last_seen_at || 0
+    };
+    out.push(w);
   }
+  // ClickUp accounts whose email differs from Slack: link them to the Slack person with the same name.
+  const byName = new Map();
+  for (const w of out) for (const n of [w.name, w.real_name]) if (normName(n).length > 2 && !byName.has(normName(n))) byName.set(normName(n), w);
+  for (const m of cuMembers) {
+    if (usedCu.has(m.clickup_user_id)) continue;
+    const w = byName.get(normName(m.name));
+    if (!w) continue;
+    usedCu.add(m.clickup_user_id);
+    if (!w.clickup_user_id) { w.clickup_user_id = m.clickup_user_id; w.match = 'name'; } else w.clickup_alt_ids.push(m.clickup_user_id);
+  }
+  if (onlyMatched) for (let i = out.length - 1; i >= 0; i--) if (!out[i].clickup_user_id && out[i].email !== ownerEmail) out.splice(i, 1);
   for (const m of cuMembers) {
     if (usedCu.has(m.clickup_user_id)) continue;
     const id = 'cu_' + m.clickup_user_id, old = prev.get(id) || {};
     out.push({ id, name: m.name, role: '', department: '', color: m.color || colorFor(m.clickup_user_id), avatar_url: m.avatar_url, email: m.email, is_owner: !!ownerEmail && m.email === ownerEmail,
-      slack_user_id: null, clickup_user_id: m.clickup_user_id, match: 'clickup only', slack_presence: slack.slackEnabled() ? 'away' : 'active', slack_status_text: '', slack_status_emoji: '',
+      slack_user_id: null, clickup_user_id: m.clickup_user_id, clickup_alt_ids: [], match: 'clickup only', slack_presence: slack.slackEnabled() ? 'away' : 'active', slack_dnd: false,
+      slack_status_text: '', slack_status_emoji: '', slack_status_icon: null,
       manual_status: hq.manual[id] || 'none', last_seen_at: old.last_seen_at || (slack.slackEnabled() ? 0 : Date.now()) });
   }
   if (out.length && !out.some(w => w.is_owner)) out[0].is_owner = true; // set OWNER_EMAIL to pick yourself
@@ -92,24 +112,65 @@ function departmentFor(p) {
 }
 
 function buildTasks() {
-  const byCu = new Map(db.workers.filter(w => w.clickup_user_id).map(w => [w.clickup_user_id, w.id]));
+  const byCu = new Map(db.workers.flatMap(w => [w.clickup_user_id, ...(w.clickup_alt_ids || [])].filter(Boolean).map(c => [c, w.id])));
   db.tasks = rawTasks.map(cu.toRow).map(r => ({ ...r, assignee: r.clickup_assignee_ids.map(i => byCu.get(i)).find(Boolean) || null }));
 }
 
-/** Slack does not push presence to apps; poll matched people. */
+/** Slack does not push presence to apps; poll everyone in Slack. Also refreshes Do Not Disturb when the bot has dnd:read. */
+let polling = false, dndScope = true, myDndScope = true;
 export async function pollPresence() {
-  if (!slack.slackEnabled()) return;
-  const changes = [];
-  for (const w of db.workers.filter(w => w.slack_user_id)) {
-    try { const p = await slack.presence(w.slack_user_id); if (p !== w.slack_presence) changes.push([w.id, p]); if (p === 'active') w.last_seen_at = Date.now(); }
-    catch (e) { logError('presence', e); break; }
-    await new Promise(r => setTimeout(r, 400));
-  }
-  if (changes.length) applyChange(() => { for (const [id, p] of changes) { const w = worker(db, id); if (w) { w.slack_presence = p; logEvent('slack', 'users.getPresence', `${w.name} is ${p}`); } } });
+  if (!slack.slackEnabled() || polling) return;
+  polling = true;
+  try {
+    const people = db.workers.filter(w => w.slack_user_id), changes = [];
+    for (const w of people) {
+      try { const p = await slack.presence(w.slack_user_id); if (p !== w.slack_presence) changes.push([w.id, 'slack_presence', p]); if (p === 'active') w.last_seen_at = Date.now(); }
+      catch (e) { logError('presence', e); break; }
+      await new Promise(r => setTimeout(r, 250));
+    }
+    if (dndScope) {
+      try {
+        const info = await slack.dndInfo(people.map(w => w.slack_user_id)), now = Date.now() / 1000;
+        for (const w of people) {
+          const d = info[w.slack_user_id] || {};
+          const on = !!(d.dnd_enabled && d.next_dnd_start_ts <= now && now < d.next_dnd_end_ts) || !!(d.snooze_enabled && now < d.snooze_endtime);
+          if (on !== !!w.slack_dnd) changes.push([w.id, 'slack_dnd', on]);
+        }
+      } catch (e) { if (/missing_scope/.test(e.message)) dndScope = false; else logError('dnd', e); }
+    }
+    // your own Pause notifications / DND, which only your user token can see
+    const own = getOwner(db);
+    if (own && own.slack_user_id && slack.userTokenEnabled() && myDndScope) {
+      try {
+        const d = await slack.myDnd(), now = Date.now() / 1000;
+        const on = !!(d.snooze_enabled && now < d.snooze_endtime) || !!(d.dnd_enabled && d.next_dnd_start_ts <= now && now < d.next_dnd_end_ts);
+        const i = changes.findIndex(c => c[0] === own.id && c[1] === 'slack_dnd'); if (i >= 0) changes.splice(i, 1);
+        if (on !== !!own.slack_dnd) changes.push([own.id, 'slack_dnd', on]);
+      } catch (e) { if (/missing_scope/.test(e.message)) myDndScope = false; else logError('my dnd', e); }
+    }
+    if (changes.length) applyChange(() => {
+      for (const [id, k, v] of changes) {
+        const w = worker(db, id); if (!w) continue;
+        w[k] = v; logEvent('slack', k === 'slack_dnd' ? 'dnd.teamInfo' : 'users.getPresence', `${w.name} is ${k === 'slack_dnd' ? (v ? 'in Do Not Disturb' : 'out of Do Not Disturb') : v}`);
+      }
+    });
+  } finally { polling = false; db.meta.slack_scopes = { dnd: dndScope, emoji: emojiScope }; }
 }
+
+/** Workspace custom emoji, so status icons like :naturalabs: show. Needs emoji:read; skipped quietly without it. */
+let emojiScope = true, emojiAt = 0;
+async function refreshCustomEmoji() {
+  await loadEmoji();
+  if (!emojiScope || Date.now() - emojiAt < 30 * 60000) return;
+  emojiAt = Date.now();
+  try { setCustomEmoji(await slack.customEmoji()); } catch (e) { if (/missing_scope/.test(e.message)) emojiScope = false; else logError('emoji', e); }
+}
+export const slackScopes = () => ({ dnd: dndScope, emoji: emojiScope });
 
 // ---- webhook ----
 export async function ensureWebhook(publicUrl) {
+  // No public URL means ClickUp can't reach us: drop any saved webhook so we fall back to 60 s polling.
+  if (!publicUrl && db.meta.webhook) { db.meta.webhook = null; persist(); }
   if (!cu.clickupEnabled() || !publicUrl || !db.meta.clickup_team_id) return;
   const endpoint = publicUrl.replace(/\/$/, '') + '/webhooks/clickup';
   if (db.meta.webhook && db.meta.webhook.endpoint === endpoint && db.meta.webhook.secret) return;

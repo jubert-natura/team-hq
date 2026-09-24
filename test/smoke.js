@@ -3,12 +3,21 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+// Throwaway store so the test never touches data/store.json.
+const STORE = path.join(os.tmpdir(), `team-hq-test-${process.pid}.json`);
+process.on('exit', () => fs.rmSync(STORE, { force: true }));
 
 const calls = [];
 const SECRET = 'whsec_test';
 const tasks = {
-  '9001': { id: '9001', name: 'Homepage revision', status: { status: 'in review', type: 'custom' }, assignees: [{ id: 22 }], list: { id: '500', name: 'Web' }, folder: { name: 'Acme' }, priority: { id: '2' }, due_date: String(Date.now() + 864e5), tags: [], url: 'https://app.clickup.com/t/9001', date_updated: String(Date.now()) },
-  '9002': { id: '9002', name: 'Landing page QA', status: { status: 'in progress', type: 'custom' }, assignees: [{ id: 22 }], list: { id: '500', name: 'Web' }, folder: { name: 'Acme' }, priority: null, due_date: null, tags: [], url: 'https://app.clickup.com/t/9002', date_updated: String(Date.now()) }
+  '9001': { id: '9001', name: 'Homepage revision', status: { status: 'in review', type: 'custom' }, assignees: [{ id: 22 }], creator: { id: 11 }, watchers: [{ id: 11 }], list: { id: '500', name: 'Web' }, folder: { name: 'Acme' }, priority: { id: '2' }, due_date: String(Date.now() + 864e5), tags: [], url: 'https://app.clickup.com/t/9001', date_updated: String(Date.now()) },
+  // someone else's task in review: not created or watched by the owner, so it must not reach Needs You
+  '9003': { id: '9003', name: 'Denzel own review', status: { status: 'in review', type: 'custom' }, assignees: [{ id: 22 }], creator: { id: 22 }, watchers: [{ id: 22 }], list: { id: '500', name: 'Web' }, folder: { name: 'Acme' }, priority: null, due_date: null, tags: [], url: 'https://app.clickup.com/t/9003', date_updated: String(Date.now()) },
+  '9002': { id: '9002', name: 'Landing page QA', status: { status: 'in progress', type: 'custom' }, assignees: [{ id: 22 }], creator: { id: 11 }, watchers: [{ id: 11 }], list: { id: '500', name: 'Web' }, folder: { name: 'Acme' }, priority: null, due_date: null, tags: [], url: 'https://app.clickup.com/t/9002', date_updated: String(Date.now()) }
 };
 const mock = http.createServer((req, res) => {
   let body = ''; req.on('data', c => body += c); req.on('end', () => {
@@ -39,7 +48,7 @@ const mock = http.createServer((req, res) => {
 });
 await new Promise(r => mock.listen(4999, r));
 
-const app = spawn('node', ['server/index.js'], { env: { ...process.env, PORT: '3999', SLACK_BOT_TOKEN: 'xoxb-test', CLICKUP_API_TOKEN: 'pk_test', OWNER_EMAIL: 'me@acme.com', PUBLIC_URL: 'http://localhost:3999', SLACK_API_BASE: 'http://localhost:4999/slack', CLICKUP_API_BASE: 'http://localhost:4999/cu', HQ_PASSWORD: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
+const app = spawn('node', ['server/index.js'], { env: { ...process.env, PORT: '3999', SLACK_BOT_TOKEN: 'xoxb-test', CLICKUP_API_TOKEN: 'pk_test', OWNER_EMAIL: 'me@acme.com', PUBLIC_URL: 'http://localhost:3999', HQ_STORE: STORE, CLICKUP_TEAM_ID: '', CLICKUP_LIST_IDS: '', CLICKUP_SPACE_IDS: '', CLICKUP_DEFAULT_LIST_ID: '', DEPARTMENTS: '', SLACK_ONLY_MATCHED: '', POLL_SECONDS: '', SLACK_API_BASE: 'http://localhost:4999/slack', CLICKUP_API_BASE: 'http://localhost:4999/cu', HQ_PASSWORD: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
 let out = ''; app.stdout.on('data', d => out += d); app.stderr.on('data', d => out += d);
 const base = 'http://localhost:3999';
 const get = async p => (await fetch(base + p)).json();
@@ -53,9 +62,10 @@ try {
   assert.equal(s.workers.length, 2, 'bot filtered, 2 people');
   const me = s.workers.find(w => w.is_owner), dz = s.workers.find(w => w.name === 'Denzel');
   assert.equal(me.email, 'me@acme.com'); assert.equal(dz.clickup_user_id, '22'); assert.equal(dz.match, 'email');
-  assert.equal(s.tasks.length, 2); assert.equal(s.tasks[0].assignee, dz.id);
+  assert.equal(s.tasks.length, 3); assert.equal(s.tasks[0].assignee, dz.id);
   const appr = s.needs.find(n => n.type === 'approval' && n.state !== 'resolved');
   assert.ok(appr, 'task in review -> approval in Needs You');
+  assert.ok(!s.needs.some(n => n.task === 'cu_9003'), 'review on a task you are not on stays out of Needs You');
   assert.ok(s.meta.webhook && s.meta.webhook.ok, 'webhook registered');
   console.log('✓ sync: people matched by email, tasks mapped, approval created, webhook registered');
 
@@ -65,7 +75,9 @@ try {
   s = await get('/api/state');
   assert.equal(s.tasks.find(t => t.id === 'cu_9001').clickup_status, 'complete');
   assert.ok(!s.needs.some(n => n.task === 'cu_9001' && n.state !== 'resolved'), 'approval resolved');
-  console.log('✓ approve: PUT to ClickUp, task complete, approval cleared');
+  const denied = await post('/api/tasks/cu_9002/status', { state: 'in_review' });
+  assert.ok(!denied.ok && !calls.includes('PUT /cu/task/9002'), 'only the assignee can move a task');
+  console.log('✓ approve: PUT to ClickUp, task complete, approval cleared; non-assignee change refused; feed is yours only');
 
   // webhook: someone moves 9002 to review directly in ClickUp
   tasks['9002'].status = { status: 'in review', type: 'custom' };

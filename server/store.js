@@ -5,29 +5,31 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { displayStatus, hqState, reconcileNeeds, worker, STATE_LBL } from '../shared/model.js';
 
-const FILE = path.resolve('data/store.json');
+// Live, demo and tests each get their own file so fake data never mixes with real data.
+const file = () => path.resolve(process.env.HQ_STORE
+  || (process.env.SLACK_BOT_TOKEN || process.env.CLICKUP_API_TOKEN ? 'data/store.json' : 'data/demo.json'));
 
 export const db = {
   workers: [], tasks: [], lists: [], map: [], needs: [], activity: [], events: [],
   meta: { slack_team_id: null, clickup_team_id: null, webhook: null, last_sync: null, errors: [] },
   mode: { slack: 'off', clickup: 'off', demo: false }
 };
-export const hq = { overrides: {}, manual: {}, matches: {} }; // matches: slackId -> clickupId (manual links)
+export const hq = { overrides: {}, manual: {}, matches: {}, groups: [] }; // matches: slackId -> clickupId (manual links); groups: office groups
 
 export function loadPersisted() {
   try {
-    const s = JSON.parse(fs.readFileSync(FILE, 'utf8'));
+    const s = JSON.parse(fs.readFileSync(file(), 'utf8'));
     db.needs = s.needs || []; db.activity = s.activity || []; db.events = s.events || [];
     db.meta.webhook = s.webhook || null;
-    Object.assign(hq, { overrides: s.overrides || {}, manual: s.manual || {}, matches: s.matches || {} });
+    Object.assign(hq, { overrides: s.overrides || {}, manual: s.manual || {}, matches: s.matches || {}, slackSet: s.slackSet || null, mailDone: s.mailDone || {}, groups: s.groups || [] });
   } catch { /* first run */ }
 }
 let saveT;
 export function persist() {
   clearTimeout(saveT);
   saveT = setTimeout(() => {
-    fs.mkdirSync(path.dirname(FILE), { recursive: true });
-    fs.writeFileSync(FILE, JSON.stringify({ needs: db.needs, activity: db.activity.slice(-300), events: db.events.slice(-80), webhook: db.meta.webhook, ...hq }, null, 1));
+    fs.mkdirSync(path.dirname(file()), { recursive: true });
+    fs.writeFileSync(file(),JSON.stringify({ needs: db.needs, activity: db.activity.slice(-300), events: db.events.slice(-80), webhook: db.meta.webhook, ...hq }, null, 1));
   }, 300);
 }
 
@@ -83,8 +85,8 @@ export function applyChange(mutate) {
   for (const w of db.workers) {
     const a = beforeStatus[w.id], b = displayStatus(db, w);
     if (!a || a === b) continue;
-    const txt = { break: 'Went on break', meeting: 'Joined a meeting', offline: 'Went offline', away: 'Stepped away' }[b]
-      || (a === 'offline' ? 'Came online' : a === 'break' ? 'Back from break' : a === 'meeting' ? 'Left the meeting' : null);
+    const txt = { break: 'Went on break', meeting: 'Joined a meeting', offline: 'Went offline', away: 'Stepped away', focus: 'Went into focus mode' }[b]
+      || (a === 'offline' ? 'Came online' : a === 'break' ? 'Back from break' : a === 'meeting' ? 'Left the meeting' : a === 'focus' ? 'Out of focus mode' : null);
     if (txt) logActivity(w.id, b === 'offline' ? 'went_offline' : b === 'break' ? 'went_on_break' : 'returned', txt);
   }
   reconcileNeeds(db);
@@ -101,7 +103,7 @@ export function broadcast() {
   bT = setTimeout(() => { const data = `event: state\ndata: ${JSON.stringify(publicState())}\n\n`; for (const c of clients) c.write(data); }, 60);
 }
 export function publicState() {
-  return { workers: db.workers, tasks: db.tasks, lists: db.lists.map(l => ({ id: l.id, name: l.name, statuses: l.statuses.map(s => s.status) })), map: db.map, needs: db.needs, activity: db.activity.slice(-150), events: db.events, mode: db.mode,
-    meta: { slack_team_id: db.meta.slack_team_id, clickup_team_id: db.meta.clickup_team_id, webhook: db.meta.webhook ? { endpoint: db.meta.webhook.endpoint, ok: !!db.meta.webhook.secret } : null, last_sync: db.meta.last_sync, errors: db.meta.errors.slice(-5) },
-    stateLabels: STATE_LBL };
+  return { workers: db.workers, tasks: db.tasks, lists: db.lists.map(l => ({ id: l.id, name: l.name, statuses: l.statuses.map(s => ({ status: s.status, color: s.color || '', auto: s.auto })) })), map: db.map, needs: db.needs, activity: db.activity.slice(-150), events: db.events, mode: db.mode,
+    meta: { slack_team_id: db.meta.slack_team_id, clickup_team_id: db.meta.clickup_team_id, webhook: db.meta.webhook ? { endpoint: db.meta.webhook.endpoint, ok: !!db.meta.webhook.secret } : null, last_sync: db.meta.last_sync, slack_scopes: db.meta.slack_scopes || null, errors: db.meta.errors.slice(-5) },
+    groups: hq.groups || [], stateLabels: STATE_LBL };
 }

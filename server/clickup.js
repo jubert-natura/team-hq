@@ -51,7 +51,7 @@ export async function allTasks(teamId) {
 export const getTask = id => call('GET', `/task/${id}`, null, { include_subtasks: false });
 export async function listStatuses(listId) {
   const j = await call('GET', `/list/${listId}`);
-  return { id: String(j.id), name: j.name, statuses: (j.statuses || []).sort((a, b) => a.orderindex - b.orderindex).map(s => ({ status: s.status, type: s.type })) };
+  return { id: String(j.id), name: j.name, statuses: (j.statuses || []).sort((a, b) => a.orderindex - b.orderindex).map(s => ({ status: s.status, type: s.type, color: s.color || '' })) };
 }
 export const setStatus = (id, status) => call('PUT', `/task/${id}`, { status });
 export const addComment = (id, text) => call('POST', `/task/${id}/comment`, { comment_text: text, notify_all: false });
@@ -78,7 +78,8 @@ export function toRow(t) {
     id: 'cu_' + t.id, cu_id: t.id, name: t.name,
     clickup_assignee_ids: (t.assignees || []).map(a => String(a.id)),
     list_id: t.list ? String(t.list.id) : 'none', list_name: t.list ? t.list.name : '',
-    clickup_status: t.status ? t.status.status : '', clickup_status_type: t.status ? t.status.type : '',
+    clickup_status: t.status ? t.status.status : '', clickup_status_type: t.status ? t.status.type : '', status_color: (t.status && t.status.color) || '',
+    creator_id: t.creator ? String(t.creator.id) : null, watcher_ids: (t.watchers || []).map(w => String(w.id)),
     client: (t.folder && !t.folder.hidden && t.folder.name) || (t.space && t.space.name) || '',
     priority: pr ? Number(pr) : 3, due_date: t.due_date ? new Date(Number(t.due_date)).toISOString().slice(0, 10) : '',
     tags: (t.tags || []).map(x => x.name), url: t.url || `https://app.clickup.com/t/${t.id}`,

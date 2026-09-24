@@ -2,10 +2,11 @@
 
 A real-time command center for your team: a 3D office on top of **Slack** (people, presence, DMs) and **ClickUp** (tasks, workflow). The office is only a view of the data. It never becomes a second task system.
 
-- **Needs You**: one queue of what is waiting on you. It includes tasks in a review status, blocked tasks tagged `needs-owner`, and ClickUp comments that @mention you with a question. Approve / Request changes write back to ClickUp.
-- **Team**: Slack members matched to ClickUp users by email.
-- **Tasks / Board**: live ClickUp tasks, grouped any way you like. Changing a status updates ClickUp.
-- **Activity**: who is on what right now, and what changed.
+- **Needs You**: one queue of what is waiting on you, and only you. It includes tasks you created or watch that move to a review status, blocked tasks tagged `needs-owner`, and ClickUp comments that @mention you with a question. Approve / Request changes write back to ClickUp. The bell rings again every 30 minutes while anything is waiting.
+- **Team**: Slack members matched to ClickUp users by email (or by name when the emails differ).
+- **Groups**: put people into named groups (for example Video editors). Each group gets its own area in the 3D office with a color, a sign and the station style you pick: glass cubicle, cubicle or open desk. Show in office zooms to it; Tasks filters to it.
+- **Channels**: your Slack channels, read inside HQ with threads, reactions and files. The icon at the top right opens the channel or thread in Slack. Needs `channels:history` and `groups:history` on the user token.
+- **Tasks**: live ClickUp tasks as a List, Board or Calendar, with filters for person, project, priority and search, plus sort and group. A project's board uses its own ClickUp statuses and colors, with Add Task per column and drag and drop. You can only change the status of tasks assigned to you.
 
 With no tokens set, the app runs a **demo workspace** so you can try it straight away.
 
@@ -34,7 +35,7 @@ With no tokens set, the app runs a **demo workspace** so you can try it straight
 
 ### Slack app (5 minutes)
 1. Go to <https://api.slack.com/apps> → **Create New App → From scratch** and pick your workspace.
-2. Open **OAuth & Permissions**. Under **Bot Token Scopes** add `users:read`, `users:read.email`, `users.profile:read`, `chat:write`, `im:write`.
+2. Open **OAuth & Permissions**. Under **Bot Token Scopes** add `users:read`, `users:read.email`, `users.profile:read`, `chat:write`, `im:write`. Optional: `dnd:read` (Do Not Disturb shows as Focus) and `emoji:read` (workspace custom emoji as status icons).
 3. Click **Install to Workspace**, then copy the **Bot User OAuth Token** (`xoxb-…`).
 
 DMs sent from HQ come from this bot.
@@ -66,9 +67,9 @@ ClickUp ──tasks (webhooks + poll), write-back─┘        │
                                                           overrides, manual statuses, activity
 ```
 - **Status mapping.** HQ guesses how each ClickUp list's statuses map to `Up next / Working / In review / Changes requested / Blocked / Done`. Fix any wrong guesses under **Automations**.
-- **Worker status.** A status you set in HQ (Meeting / Break / Offline) wins first. Next comes a Slack status like "In a meeting", then Slack presence (away for over 4 h counts as Offline), then an in-progress task (Working). Otherwise the person shows as Online. No screen or activity tracking.
-- **Office seats.** You plus 8 teammates. People waiting on you get seated first. Everyone shows on the Team page.
-- **Matching.** Slack and ClickUp accounts link by email. Fix mismatches in **Integrations → People matching**. By default only Slack people with a ClickUp account appear; set `SLACK_ONLY_MATCHED=false` to show everyone.
+- **Worker status.** A status you set in HQ (Focus / Meeting / Break / Offline) wins first. Then Slack presence: away in Slack counts as Offline. Then the Slack status: "In a meeting" → Meeting, "Deep Work" / "Focus" / Do Not Disturb → Focus, "Lunch" / "Break" → Break. Then an in-progress task (Working). Otherwise Online. No screen or activity tracking.
+- **Office.** Everyone in Slack has a desk. Meetings go to the meeting room, breaks to the pantry (they sit and eat), and offline people walk out the front door until they come back online. Each name tag ends with the person's Slack status emoji. Everyone shows on the Team page.
+- **Matching.** Slack and ClickUp accounts link by email, then by name when the emails differ. Fix mismatches in **Integrations → People matching**. Everyone in Slack appears; set `SLACK_ONLY_MATCHED=true` to show only people with a ClickUp account.
 
 | File | What |
 | --- | --- |

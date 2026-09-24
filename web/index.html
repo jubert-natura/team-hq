@@ -28,7 +28,13 @@
     <section class="stage" id="stage">
       <div class="labels" id="labels"></div>
       <div class="hover" id="hover" aria-hidden="true"></div>
-      <div class="hqcard glass"><b>Headquarters</b><span id="hqline"></span><div class="stats" id="stats"></div></div>
+      <div class="hqtop">
+        <div class="hqcard glass"><b>Headquarters</b><span id="hqline"></span><div class="stats" id="stats"></div></div>
+        <div class="clockwrap">
+          <button class="clock glass" id="clock" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="clockpop"></button>
+          <div class="clockpop glass" id="clockpop" role="dialog" aria-label="Today's schedule" hidden></div>
+        </div>
+      </div>
       <div class="ctrls"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="reset">Reset view</button></div>
       <div class="cmd glass">
         <label for="cmd">Give the team an instruction</label>
@@ -37,6 +43,7 @@
       </div>
     </section>
     <section class="view" id="view" hidden></section>
+    <div class="vgrip" id="vgrip" role="separator" aria-orientation="vertical" aria-label="Resize panel" title="Drag to resize · double-click to reset" tabindex="0" hidden></div>
     <aside class="drawer" id="drawer" aria-label="Worker details"><div class="dinner" id="dinner"></div></aside>
     <div class="banner" id="banner"></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
