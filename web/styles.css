@@ -515,3 +515,10 @@ button.ment{cursor:pointer}
 .lbl.zone.flash{animation:gflash .7s ease 3}
 @keyframes gflash{50%{filter:drop-shadow(0 0 10px var(--gc,#E6A04A))}}
 .phead .btn,.gbtns .btn{white-space:nowrap}
+
+/* signed-in person, bottom of the sidebar */
+.mecard{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:center;margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.mecard[hidden]{display:none}
+.mecard .av{width:30px;height:30px;font-size:13px;grid-row:1/3}
+.mecard span{min-width:0}.mecard b{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mecard small{display:block;font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mecard .linkbtn{grid-column:2;justify-self:start;padding:2px 0;font-size:12px}

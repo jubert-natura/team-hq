@@ -3,7 +3,8 @@
 // Workers and tasks are rebuilt from Slack/ClickUp on every sync.
 import fs from 'node:fs';
 import path from 'node:path';
-import { displayStatus, hqState, reconcileNeeds, worker, STATE_LBL } from '../shared/model.js';
+import { displayStatus, hqState, reconcileNeeds, worker, owner, STATE_LBL } from '../shared/model.js';
+import { user, knownEmails } from './users.js';
 
 // Live, demo and tests each get their own file so fake data never mixes with real data.
 const file = () => path.resolve(process.env.HQ_STORE
@@ -14,12 +15,14 @@ export const db = {
   meta: { slack_team_id: null, clickup_team_id: null, webhook: null, last_sync: null, errors: [] },
   mode: { slack: 'off', clickup: 'off', demo: false }
 };
-export const hq = { overrides: {}, manual: {}, matches: {}, groups: [] }; // matches: slackId -> clickupId (manual links); groups: office groups
+// Team-wide settings. (groups / mailDone / slackSet here are from before accounts; they move to the owner's account.)
+export const hq = { overrides: {}, manual: {}, matches: {} }; // matches: slackId -> clickupId (manual links)
 
 export function loadPersisted() {
   try {
     const s = JSON.parse(fs.readFileSync(file(), 'utf8'));
-    db.needs = s.needs || []; db.activity = s.activity || []; db.events = s.events || [];
+    // items from before feeds were personal have no `for`; they are rebuilt for the right person on the next sync
+    db.needs = (s.needs || []).filter(n => n.for); db.activity = s.activity || []; db.events = s.events || [];
     db.meta.webhook = s.webhook || null;
     Object.assign(hq, { overrides: s.overrides || {}, manual: s.manual || {}, matches: s.matches || {}, slackSet: s.slackSet || null, mailDone: s.mailDone || {}, groups: s.groups || [] });
   } catch { /* first run */ }
@@ -89,21 +92,49 @@ export function applyChange(mutate) {
       || (a === 'offline' ? 'Came online' : a === 'break' ? 'Back from break' : a === 'meeting' ? 'Left the meeting' : a === 'focus' ? 'Out of focus mode' : null);
     if (txt) logActivity(w.id, b === 'offline' ? 'went_offline' : b === 'break' ? 'went_on_break' : 'returned', txt);
   }
-  reconcileNeeds(db);
+  reconcileNeeds(db, feedIds());
   persist();
   broadcast();
 }
 
-// ---- live updates to browsers (Server-Sent Events) ----
-const clients = new Set();
-export function addClient(res) { clients.add(res); res.on('close', () => clients.delete(res)); }
+// ---- who is looking ----
+// Without Google sign-in (local, tests, demo) everyone is the owner. With it, each browser belongs to one person.
+export const ownerKey = () => String(process.env.OWNER_EMAIL || 'owner@local').toLowerCase();
+export const isAdmin = email => !email || String(email).toLowerCase() === ownerKey();
+/** The worker a signed-in email belongs to (the owner's worker when nobody is signed in). */
+export const workerOf = email => email ? db.workers.find(w => w.email && w.email === String(email).toLowerCase()) || null : owner(db);
+/** Everyone who gets a Needs You feed: the owner, plus anyone who has signed in. */
+function feedIds() {
+  const ids = new Set(); const own = owner(db); if (own) ids.add(own.id);
+  for (const e of knownEmails()) { const w = workerOf(e); if (w) ids.add(w.id); }
+  return [...ids];
+}
+
+// ---- live updates to browsers (Server-Sent Events): each one gets its own person's view ----
+const clients = new Map(); // res -> email (or null)
+export function addClient(res, email) { clients.set(res, email || null); res.on('close', () => clients.delete(res)); }
 let bT;
 export function broadcast() {
   clearTimeout(bT);
-  bT = setTimeout(() => { const data = `event: state\ndata: ${JSON.stringify(publicState())}\n\n`; for (const c of clients) c.write(data); }, 60);
+  bT = setTimeout(() => {
+    const cache = new Map();
+    for (const [c, email] of clients) {
+      if (!cache.has(email)) cache.set(email, `event: state\ndata: ${JSON.stringify(publicState(email))}\n\n`);
+      c.write(cache.get(email));
+    }
+  }, 60);
 }
-export function publicState() {
-  return { workers: db.workers, tasks: db.tasks, lists: db.lists.map(l => ({ id: l.id, name: l.name, statuses: l.statuses.map(s => ({ status: s.status, color: s.color || '', auto: s.auto })) })), map: db.map, needs: db.needs, activity: db.activity.slice(-150), events: db.events, mode: db.mode,
-    meta: { slack_team_id: db.meta.slack_team_id, clickup_team_id: db.meta.clickup_team_id, webhook: db.meta.webhook ? { endpoint: db.meta.webhook.endpoint, ok: !!db.meta.webhook.secret } : null, last_sync: db.meta.last_sync, slack_scopes: db.meta.slack_scopes || null, errors: db.meta.errors.slice(-5) },
-    groups: hq.groups || [], stateLabels: STATE_LBL };
+/** The state one person sees: "you" is them, and Needs You, groups and saved setup are theirs. */
+export function publicState(email) {
+  const own = owner(db), me = workerOf(email), meId = me && me.id, key = email || ownerKey(), u = user(key) || {};
+  return {
+    workers: db.workers.map(w => (w.is_owner === (w.id === meId) ? w : { ...w, is_owner: w.id === meId })),
+    tasks: db.tasks, lists: db.lists.map(l => ({ id: l.id, name: l.name, statuses: l.statuses.map(s => ({ status: s.status, color: s.color || '', auto: s.auto })) })), map: db.map,
+    needs: meId ? db.needs.filter(n => (n.for || (own && own.id)) === meId) : [],
+    activity: db.activity.slice(-150), events: isAdmin(email) ? db.events : [], mode: db.mode,
+    meta: { slack_team_id: db.meta.slack_team_id, clickup_team_id: db.meta.clickup_team_id, webhook: db.meta.webhook ? { endpoint: db.meta.webhook.endpoint, ok: !!db.meta.webhook.secret } : null, last_sync: db.meta.last_sync, slack_scopes: db.meta.slack_scopes || null, errors: isAdmin(email) ? db.meta.errors.slice(-5) : [] },
+    groups: u.groups || [], prefs: u.prefs || {},
+    me: { email: email || null, signedIn: !!email, admin: isAdmin(email), name: (me && me.name) || u.name || '', inSlack: !!me, slackUser: isAdmin(email) && !!process.env.SLACK_USER_TOKEN },
+    stateLabels: STATE_LBL
+  };
 }

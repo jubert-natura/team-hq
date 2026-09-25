@@ -1,7 +1,8 @@
 // Live sync: Slack = people/presence, ClickUp = tasks/workflow. Builds workers + tasks, then applyChange.
 import * as slack from './slack.js';
 import * as cu from './clickup.js';
-import { db, hq, applyChange, rebuildMap, logEvent, logError, persist } from './store.js';
+import { db, hq, applyChange, rebuildMap, logEvent, logError, persist, workerOf } from './store.js';
+import { knownEmails } from './users.js';
 import { autoMapStatus, owner as getOwner, worker, task as getTask } from '../shared/model.js';
 import { loadEmoji, resolveEmoji, emojifyText, setCustomEmoji } from './emoji.js';
 
@@ -200,17 +201,19 @@ export async function onWebhook(body) {
 
 /** A comment from a teammate that mentions the owner and asks something becomes a Needs You question. */
 async function checkQuestion(tid, body) {
-  const own = getOwner(db); if (!own) return;
+  // everyone with a feed: the owner plus anyone who has signed in
+  const own = getOwner(db), people = [...new Set([own, ...knownEmails().map(workerOf)].filter(Boolean))];
+  if (!people.length) return;
   const item = (body.history_items || [])[0] || {};
   let text = item.comment && (item.comment.text_content || item.comment.comment_text);
   let authorCu = item.user && String(item.user.id);
   if (!text) { try { const { comments = [] } = await cu.getComments(tid); const c = comments.sort((a, b) => Number(b.date) - Number(a.date))[0]; if (c) { text = c.comment_text; authorCu = String(c.user && c.user.id); } } catch { return; } }
-  if (!text || authorCu === own.clickup_user_id) return;
-  const first = own.name.split(/\s+/)[0].toLowerCase();
-  if (!(text.includes('?') && text.toLowerCase().includes('@' + first))) return;
+  if (!text || !text.includes('?')) return;
   const author = db.workers.find(w => w.clickup_user_id === authorCu); const t = getTask(db, 'cu_' + tid);
-  applyChange(() => db.needs.push({ id: 'n' + Date.now().toString(36), type: 'question', source: 'comment:' + (item.id || Date.now()), task: t ? t.id : null, from: author ? author.id : null,
-    title: 'Question on ' + (t ? t.name.slice(0, 40) : 'a task'), body: text.slice(0, 400), priority: t ? t.priority : 3, state: 'open', created: Date.now() }));
+  const asked = people.filter(p => p.clickup_user_id !== authorCu && text.toLowerCase().includes('@' + p.name.split(/\s+/)[0].toLowerCase()));
+  if (!asked.length) return;
+  applyChange(() => { for (const p of asked) db.needs.push({ id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), type: 'question', source: `comment:${item.id || Date.now()}:${p.id}`, for: p.id, task: t ? t.id : null, from: author ? author.id : null,
+    title: 'Question on ' + (t ? t.name.slice(0, 40) : 'a task'), body: text.slice(0, 400), priority: t ? t.priority : 3, state: 'open', created: Date.now() }); });
 }
 
 export { rawTasks };

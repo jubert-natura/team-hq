@@ -72,15 +72,16 @@ export function nextTask(db, id) {
 }
 /** All ClickUp accounts of a person (a few people have two). */
 export const cuIds = w => (w ? [w.clickup_user_id, ...(w.clickup_alt_ids || [])].filter(Boolean) : []);
-/** You are on a task when you created it or watch it in ClickUp. Tasks without that data (demo) count as yours. */
-export function involvesOwner(db, t) {
-  const own = owner(db); if (!own) return false;
+/** A person is on a task when they created it or watch it in ClickUp. Tasks without that data (demo) count for everyone. */
+export function involves(w, t) {
+  if (!w) return false;
   if (t.creator_id === undefined && !t.watcher_ids) return true;
-  const ids = cuIds(own);
+  const ids = cuIds(w);
   return ids.includes(t.creator_id) || (t.watcher_ids || []).some(id => ids.includes(id));
 }
-/** Only the assignee can move a task's status. */
-export const canEditTask = (db, t) => { const own = owner(db); return !!own && t.assignee === own.id; };
+export const involvesOwner = (db, t) => involves(owner(db), t);
+/** Only the assignee can move a task's status. In the browser "you" is whoever is signed in. */
+export const canEditTask = (db, t, who = owner(db)) => !!who && t.assignee === who.id;
 
 export const openNeeds = db => db.needs.filter(n => n.state !== 'resolved');
 export const unreadNeeds = db => db.needs.filter(n => n.state === 'open');
@@ -89,28 +90,30 @@ export function lastActivity(db, id) { for (let i = db.activity.length - 1; i >=
 export const openCount = (db, id) => tasksOf(db, id).filter(t => !['approved', 'cancelled'].includes(hqState(db, t))).length;
 
 /**
- * Open/resolve Approval + Decision items from task state. Idempotent.
- * Only tasks you are on (created or watching) reach you, so the feed is yours, not the whole workspace's.
+ * Open/resolve Approval + Decision items from task state, for each person in `forIds` (worker ids). Idempotent.
+ * Every item carries `for`: only tasks that person is on (created or watching) reach them, so each feed is personal.
  */
-export function reconcileNeeds(db, now = Date.now()) {
-  const own = owner(db);
+export function reconcileNeeds(db, forIds, now = Date.now()) {
+  const own = owner(db), people = (forIds || (own ? [own.id] : [])).map(id => worker(db, id)).filter(Boolean);
   for (const t of db.tasks) {
-    const st = hqState(db, t);
-    const from = worker(db, t.assignee), mine = involvesOwner(db, t);
-    const want = {
-      approval: st === 'in_review' && !!from && !from.is_owner && mine,
-      decision: st === 'blocked' && (((t.tags || []).includes('needs-owner') && mine) || (!!own && t.assignee === own.id))
-    };
-    for (const type of ['approval', 'decision']) {
-      const src = `task:${t.id}:${type}`;
-      const ex = db.needs.find(n => n.source === src && n.state !== 'resolved');
-      if (want[type] && !ex) {
-        db.needs.push({
-          id: 'n' + now.toString(36) + Math.random().toString(36).slice(2, 6), type, source: src, task: t.id, from: t.assignee,
-          title: t.name, body: type === 'approval' ? `${from ? from.name : 'Someone'} needs approval` : `${from ? from.name : 'Someone'} is blocked and needs your decision`,
-          priority: t.priority, state: 'open', created: now
-        });
-      } else if (!want[type] && ex) { ex.state = 'resolved'; ex.resolved = now; }
+    const st = hqState(db, t), from = worker(db, t.assignee);
+    for (const me of people) {
+      const mine = involves(me, t);
+      const want = {
+        approval: st === 'in_review' && !!from && from.id !== me.id && mine,
+        decision: st === 'blocked' && (((t.tags || []).includes('needs-owner') && mine) || t.assignee === me.id)
+      };
+      for (const type of ['approval', 'decision']) {
+        const src = `task:${t.id}:${type}:${me.id}`;
+        const ex = db.needs.find(n => n.source === src && n.state !== 'resolved');
+        if (want[type] && !ex) {
+          db.needs.push({
+            id: 'n' + now.toString(36) + Math.random().toString(36).slice(2, 6), type, source: src, for: me.id, task: t.id, from: t.assignee,
+            title: t.name, body: type === 'approval' ? `${from ? from.name : 'Someone'} needs approval` : `${from ? from.name : 'Someone'} is blocked and needs your decision`,
+            priority: t.priority, state: 'open', created: now
+          });
+        } else if (!want[type] && ex) { ex.state = 'resolved'; ex.resolved = now; }
+      }
     }
   }
   // tasks that disappeared or finished resolve anything tied to them
@@ -119,5 +122,5 @@ export function reconcileNeeds(db, now = Date.now()) {
     const t = task(db, n.task);
     if (!t || ['approved', 'cancelled'].includes(hqState(db, t))) { n.state = 'resolved'; n.resolved = now; }
   }
-  db.needs = db.needs.filter(n => n.state !== 'resolved' || now - n.resolved < 6 * HOUR).slice(-200);
+  db.needs = db.needs.filter(n => n.state !== 'resolved' || now - n.resolved < 6 * HOUR).slice(-2000);
 }

@@ -19,7 +19,23 @@ const ui = (() => { try { return JSON.parse(localStorage.getItem('teamhq.ui') ||
 ui.view = ui.view || 'hq'; ui.tscope = ui.tscope || 'mine'; ui.tgroup = ui.tgroup || 'status'; ui.tview = ui.tview || 'list'; ui.tsort = ui.tsort || 'status';
 if (ui.view === 'board') { ui.view = 'tasks'; ui.tview = 'board'; } else if (ui.view === 'activity') ui.view = 'hq'; else if (ui.view === 'clients') ui.view = 'channels'; // Board merged into Tasks, Activity removed, Clients became Channels
 if (String(ui.tscope).startsWith('p:')) { ui.tperson = ui.tscope.slice(2); ui.tscope = 'all'; }
-const saveUi = () => { try { localStorage.setItem('teamhq.ui', JSON.stringify(ui)); } catch { } };
+// Your setup is saved to your account on the server, so it comes back on any device when you sign in again.
+// (localStorage is just a fast local copy.) Setup from the server wins the first time the page loads.
+let prefsLoaded = false, prefsT = null, lastSaved = '';
+const PREF_KEYS = ['view', 'tscope', 'tgroup', 'tview', 'tsort', 'tperson', 'tlist', 'tprio', 'tq', 'cq', 'vw', 'chSel', 'gOpen', 'tmonth'];
+const saveUi = () => {
+  try { localStorage.setItem('teamhq.ui', JSON.stringify(ui)); } catch { }
+  if (!prefsLoaded) return;
+  const prefs = Object.fromEntries(PREF_KEYS.filter(k => ui[k] !== undefined && ui[k] !== null).map(k => [k, ui[k]])), s = JSON.stringify(prefs);
+  if (s === lastSaved) return;
+  clearTimeout(prefsT); prefsT = setTimeout(() => { lastSaved = s; fetch('/api/prefs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefs }) }).catch(() => { }); }, 800);
+};
+function loadPrefs() {
+  if (prefsLoaded) return; prefsLoaded = true;
+  const p = db.prefs || {};
+  if (Object.keys(p).length) { for (const k of PREF_KEYS) if (p[k] !== undefined) ui[k] = p[k]; lastSaved = JSON.stringify(Object.fromEntries(PREF_KEYS.filter(k => p[k] !== undefined).map(k => [k, p[k]]))); }
+  if (!db.me || !db.me.admin) { if (['automations', 'integrations'].includes(ui.view)) ui.view = 'hq'; }
+}
 const pendingTasks = new Set(), pendingNeeds = new Set();
 
 // model shortcuts bound to the current store
@@ -36,14 +52,17 @@ const Wx = id => W(id) || NOBODY;
 async function post(path, body) {
   const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
   const j = await r.json().catch(() => ({ ok: false, error: r.statusText }));
+  if (r.status === 401 && j.signin) { location.href = '/login'; throw new Error('signed out'); }
   if (!j.ok) { toast(j.error || 'Something went wrong'); throw new Error(j.error); }
   return j;
 }
 function connect() {
   const es = new EventSource('/api/stream');
-  es.addEventListener('state', e => { db = JSON.parse(e.data); pendingTasks.clear(); pendingNeeds.clear(); banner(''); render(); });
-  es.onerror = () => banner('Lost connection to the HQ server — retrying…');
+  es.addEventListener('state', e => { db = JSON.parse(e.data); loadPrefs(); pendingTasks.clear(); pendingNeeds.clear(); banner(''); render(); });
+  // if the stream drops because the session ended, go back to sign-in instead of retrying forever
+  es.onerror = () => { banner('Lost connection to the HQ server — retrying…'); fetch('/api/health').then(r => { if (r.status === 401) location.href = '/login'; }).catch(() => { }); };
 }
+async function signOut() { try { await fetch('/auth/logout', { method: 'POST' }); } catch { } try { localStorage.removeItem('teamhq.ui'); } catch { } location.href = '/login?e=signedout'; }
 function banner(msg) { const b = $('#banner'); b.textContent = msg; b.classList.toggle('on', !!msg); }
 
 // ---------- formatting ----------
@@ -87,7 +106,14 @@ function rNav() {
   const needs = openNeeds().length, unread = unreadNeeds().length, open = db.tasks.filter(t => !['approved', 'cancelled'].includes(hqState(t))).length;
   const item = (k, label, cnt, hot, extra) => `<button class="nitem" data-nav="${k}" id="nav-${k}"${ui.view === k ? ' aria-current="page"' : ''}>${ic(k)}<span>${label}</span>${cnt != null ? `<span class="cnt${hot ? ' hot' : ''}${extra || ''}">${cnt}</span>` : ''}</button>`;
   $('#navWork').innerHTML = item('hq', 'Headquarters') + item('needs', 'Needs you', needs, needs > 0, unread ? ' unread' : '') + item('team', 'Team', db.workers.length) + item('groups', 'Groups', (db.groups || []).length || null) + item('tasks', 'Tasks', open) + item('channels', 'Channels');
-  $('#navMgmt').innerHTML = item('automations', 'Automations') + item('integrations', 'Integrations');
+  // team-wide settings are the owner's; everyone else doesn't see them
+  const admin = !db.me || db.me.admin;
+  $('#mgmtWrap').hidden = !admin;
+  $('#navMgmt').innerHTML = admin ? item('automations', 'Automations') + item('integrations', 'Integrations') : '';
+  // who is signed in, with Sign out
+  const mc = $('#mecard'), me = OWNER();
+  mc.hidden = !(db.me && db.me.signedIn);
+  if (!mc.hidden) mc.innerHTML = `${me ? avatar(me) : ''}<span><b>${esc((me && me.name) || db.me.name || db.me.email)}</b><small>${esc(db.me.email)}</small></span><button class="linkbtn" id="signout" type="button">Sign out</button>`;
   if (unread > lastUnread) { const el = $('#nav-needs'); if (el) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); } }
   lastUnread = unread;
   const pill = (el, m) => { el.textContent = m === 'live' ? 'Live' : m === 'demo' ? 'Demo' : 'Not set'; el.className = m === 'live' ? 'live' : m === 'demo' ? 'demo' : ''; };
@@ -279,7 +305,7 @@ function loadChannels(refresh) {
   if (chans.loading) return;
   chans.loading = true;
   fetch('/api/channels' + (refresh ? '?refresh=1' : '')).then(r => r.json()).then(j => {
-    Object.assign(chans, { loading: false, at: Date.now(), data: j.ok ? j.channels : null, error: j.ok ? null : j.error, team: j.team || chans.team, byUser: !!j.byUser });
+    Object.assign(chans, { loading: false, at: Date.now(), data: j.ok ? j.channels : null, error: j.ok ? null : j.error, personal: !!j.personal, team: j.team || chans.team, byUser: !!j.byUser });
     if (ui.view === 'channels') render();
   }).catch(e => { Object.assign(chans, { loading: false, error: e.message }); if (ui.view === 'channels') render(); });
 }
@@ -353,7 +379,8 @@ function rChannels() {
   if (!chans.data && !chans.error && !chans.loading) loadChannels();
   const q = (ui.cq || '').toLowerCase();
   const list = (chans.data || []).filter(c => !q || (c.name + ' ' + c.topic + ' ' + c.purpose).toLowerCase().includes(q));
-  const scopeHelp = `<div class="empty"><strong>HQ can't list your channels yet.</strong>${esc(chans.error || '')}<br><br>Add <code>SLACK_USER_TOKEN</code> (with <code>channels:read</code> and <code>groups:read</code>) to <code>.env</code> and restart HQ.</div>`;
+  const scopeHelp = chans.personal ? `<div class="empty"><strong>Channels aren't available for your account yet.</strong>Reading Slack inside HQ uses a personal Slack connection, and so far only the HQ owner has one. Use the Slack app for now.</div>`
+    : `<div class="empty"><strong>HQ can't list your channels yet.</strong>${esc(chans.error || '')}<br><br>Add <code>SLACK_USER_TOKEN</code> (with <code>channels:read</code> and <code>groups:read</code>) to <code>.env</code> and restart HQ.</div>`;
   const rows = list.map(c => `<button class="chrow${c.id === ui.chSel ? ' sel' : ''}" data-act="chOpen" data-id="${esc(c.id)}"><span class="chn">${c.is_private ? '🔒' : '#'}</span><span class="chb"><b>${esc(c.name)}</b>${c.topic || c.purpose ? `<small>${esc(c.topic || c.purpose)}</small>` : ''}</span></button>`).join('');
   return head('Channels', `Your Slack channels${chans.data ? ` · ${chans.data.length}` : ''}`, `<button class="btn" data-act="chRefresh">${ic('sync')}Refresh</button>`) +
     (chans.loading && !chans.data ? '<p class="hint">Loading your channels from Slack…</p>' : chans.error ? scopeHelp :
@@ -537,6 +564,7 @@ const focus = id => { const el = document.getElementById(id); if (el) el.focus()
 function taskAction(taskId, fn) { pendingTasks.add(taskId); render(); fn().catch(() => { pendingTasks.delete(taskId); render(); }); }
 
 document.addEventListener('click', e => {
+  if (e.target.closest('#signout')) { signOut(); return; }
   const nv = e.target.closest('[data-nav]');
   if (nv) { ui.view = nv.dataset.nav; openForm = null; render(); $('#view').scrollTop = 0; return; }
   const b = e.target.closest('[data-act]'); if (!b || !b.closest('#app')) return;
@@ -573,7 +601,7 @@ document.addEventListener('click', e => {
     case 'dmSend': { const v = val('dm-' + id); if (!v) return focus('dm-' + id); post(`/api/workers/${id}/message`, { text: v }).then(() => { document.getElementById('dm-' + id).value = ''; drawerMode = null; toast(`Sent to ${W(id).name} in Slack.`); render(); }).catch(() => { }); return; }
     case 'dInstr': drawerMode = drawerMode === 'instr' ? null : 'instr'; render(); focus('di-' + id); return;
     case 'dSend': { const v = val('di-' + id); if (!v) return focus('di-' + id); post('/api/tasks', { name: v.slice(0, 200), assignee: id, state: 'todo' }).then(() => { drawerMode = null; toast(`Assigned to ${W(id).name} in ClickUp.`); render(); }).catch(() => { }); return; }
-    case 'myStatus': post(`/api/workers/${OWNER().id}/status`, { status: id }).then(j => toast(j.slack === 'ok' ? 'Status set in HQ and in Slack.' : j.slack === 'off' ? 'Status set in HQ. Add SLACK_USER_TOKEN to sync it to Slack too.' : 'Set in HQ. Slack said: ' + j.slack)).catch(() => { }); return;
+    case 'myStatus': post(`/api/workers/${OWNER().id}/status`, { status: id }).then(j => toast(j.slack === 'ok' ? 'Status set in HQ and in Slack.' : j.slack === 'off' ? (db.me && !db.me.admin ? 'Status set in HQ.' : 'Status set in HQ. Add SLACK_USER_TOKEN to sync it to Slack too.') : 'Set in HQ. Slack said: ' + j.slack)).catch(() => { }); return;
     case 'sim': post('/api/sim/' + id).catch(() => { }); return;
     case 'chRefresh': loadChannels(true); if (ui.chSel) loadMessages(ui.chSel, ui.chThread || null, true); toast('Refreshing…'); return;
     case 'chOpen': ui.view = 'channels'; ui.chSel = id; ui.chThread = null; stickBottom = true; break;

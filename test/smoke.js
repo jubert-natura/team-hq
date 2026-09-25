@@ -9,7 +9,7 @@ import path from 'node:path';
 
 // Throwaway store so the test never touches data/store.json.
 const STORE = path.join(os.tmpdir(), `team-hq-test-${process.pid}.json`);
-process.on('exit', () => fs.rmSync(STORE, { force: true }));
+process.on('exit', () => { for (const f of [STORE, STORE.replace(/.json$/, '-users.json'), STORE.replace(/.json$/, '-sessions.json')]) fs.rmSync(f, { force: true }); });
 
 const calls = [];
 const SECRET = 'whsec_test';
@@ -48,7 +48,7 @@ const mock = http.createServer((req, res) => {
 });
 await new Promise(r => mock.listen(4999, r));
 
-const app = spawn('node', ['server/index.js'], { env: { ...process.env, PORT: '3999', SLACK_BOT_TOKEN: 'xoxb-test', CLICKUP_API_TOKEN: 'pk_test', OWNER_EMAIL: 'me@acme.com', PUBLIC_URL: 'http://localhost:3999', HQ_STORE: STORE, CLICKUP_TEAM_ID: '', CLICKUP_LIST_IDS: '', CLICKUP_SPACE_IDS: '', CLICKUP_DEFAULT_LIST_ID: '', DEPARTMENTS: '', SLACK_ONLY_MATCHED: '', POLL_SECONDS: '', SLACK_API_BASE: 'http://localhost:4999/slack', CLICKUP_API_BASE: 'http://localhost:4999/cu', HQ_PASSWORD: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
+const app = spawn('node', ['server/index.js'], { env: { ...process.env, PORT: '3999', SLACK_BOT_TOKEN: 'xoxb-test', CLICKUP_API_TOKEN: 'pk_test', OWNER_EMAIL: 'me@acme.com', PUBLIC_URL: 'http://localhost:3999', HQ_STORE: STORE, GOOGLE_CLIENT_ID: '', GOOGLE_CLIENT_SECRET: '', SLACK_USER_TOKEN: '', CLICKUP_TEAM_ID: '', CLICKUP_LIST_IDS: '', CLICKUP_SPACE_IDS: '', CLICKUP_DEFAULT_LIST_ID: '', DEPARTMENTS: '', SLACK_ONLY_MATCHED: '', POLL_SECONDS: '', SLACK_API_BASE: 'http://localhost:4999/slack', CLICKUP_API_BASE: 'http://localhost:4999/cu', HQ_PASSWORD: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
 let out = ''; app.stdout.on('data', d => out += d); app.stderr.on('data', d => out += d);
 const base = 'http://localhost:3999';
 const get = async p => (await fetch(base + p)).json();

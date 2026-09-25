@@ -53,6 +53,13 @@ For instant ClickUp updates on localhost, expose the port with a tunnel and set 
 cloudflared tunnel --url http://localhost:3000   # or: ngrok http 3000
 ```
 
+## Sign in and personal setup
+When `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set, HQ asks everyone to **Sign in with Google**. Only people whose Google email matches someone in your Slack get in (the owner in `OWNER_EMAIL` always can). Signing in also connects that person's Calendar and Gmail (read-only).
+
+Each person gets their own view, saved to their account and restored whenever they sign in again, on any device: their Needs You (their ClickUp tasks, @mentions and Gmail), groups and office layout, views, filters, panel sizes, calendar and status. Team-wide settings (Automations, Integrations, people matching) and reading Slack channels (it uses the owner's `SLACK_USER_TOKEN`) stay with the owner. Sessions last 30 days. Accounts live in `data/users.json`, which git ignores.
+
+Without Google set up, HQ falls back to the optional `HQ_PASSWORD`.
+
 ## Test
 `npm test` runs the server against fake Slack and ClickUp APIs. It checks email matching, status mapping, Needs You creation, write-back on approve, webhook signature checks, and Slack DMs.
 
