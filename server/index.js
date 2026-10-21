@@ -12,15 +12,21 @@ import { resolveEmoji, emojifyText } from './emoji.js';
 import { pollMail, markDone } from './mail.js';
 import { user, updateUser, migrateOwner, createSession, sessionEmail, endSession } from './users.js';
 import { loginPage } from './login.js';
+import { createBotStore } from './bots-store.js';
+import { createBotsRouter, botsErrorHandler } from './bots-router.js';
+import { createKnowledgeBridge } from './bots-bridge.js';
+import { createPersonalAI } from './bots-personal-ai.js';
 
 const PORT = +(process.env.PORT || 3000);
+// Local preview listens on this machine only. Set HOST=0.0.0.0 (or another address) explicitly to deploy.
+const HOST = process.env.HOST || '127.0.0.1';
 const LIVE = cu.clickupEnabled() || slack.slackEnabled();
 const PUBLIC_URL = process.env.PUBLIC_URL || (process.env.CODESPACE_NAME ? `https://${process.env.CODESPACE_NAME}-${PORT}.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}` : '');
 // Sign in with Google whenever Google is set up (and we're on real data). Otherwise the optional HQ_PASSWORD applies.
 const AUTH = () => LIVE && google.googleEnabled();
 
 const app = express();
-app.set('trust proxy', true); // Codespaces / hosting sit behind a proxy: needed for https cookies and redirect URLs
+app.set('trust proxy', process.env.HQ_TRUST_PROXY || 'loopback'); // Trust only the configured reverse proxy for HTTPS identity.
 
 // ClickUp webhook: raw body for signature check. Not behind sign-in (verified by HMAC instead).
 app.post('/webhooks/clickup', express.raw({ type: '*/*', limit: '2mb' }), (req, res) => {
@@ -91,6 +97,20 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: '200kb' }));
 app.use((req, res, next) => { req.key = req.email || ownerKey(); req.me = workerOf(req.email); req.admin = isAdmin(req.email); next(); });
+// AI team workspace: owner only, its own data file (data/bot-hq.json or HQ_BOT_STORE). Separate from the human team above.
+const botStore = createBotStore();
+const personalAI = createPersonalAI({ file: path.resolve(path.dirname(process.env.HQ_BOT_STORE || 'data/bot-hq.json'), 'bot-personal-ai.json') });
+const bridgeEnabled = process.env.HQ_BOT_BRIDGE === 'true';
+const knowledgeBridge = bridgeEnabled ? createKnowledgeBridge() : null;
+// Personal API connections are the only task runtime in the shared application. Never inherit a CLI login.
+app.use('/bots', (req, res, next) => {
+  if (!req.admin && !(req.email && personalAI.allowed(req.email))) return res.status(403).type('text').send('Ask the HQ owner to approve your AI workspace access.');
+  if (!req.admin && ['/', '/index.html'].includes(req.path)) return res.redirect('/bots/team.html');
+  next();
+});
+app.use('/api/bots', createBotsRouter({ store: botStore, ownerEmail: ownerKey, knowledge: knowledgeBridge, personalAI, authReady: AUTH,
+  candidates: () => LIVE && !db.mode.demo ? db.workers.filter(w => w.slack_user_id && w.email && w.email !== ownerKey()).map(w => ({ email: w.email.toLowerCase(), name: w.name })) : []
+}), botsErrorHandler);
 app.use('/shared', express.static(path.resolve('shared')));
 app.use(express.static(path.resolve('web')));
 
@@ -330,8 +350,8 @@ loadPersisted();
 // data from before accounts (groups, Gmail "Done" list, Slack status, Google connection) moves to the owner's account once
 migrateOwner(ownerKey(), { groups: hq.groups, mailDone: hq.mailDone, slackSet: hq.slackSet, googleFile: path.resolve('data/google.json') });
 delete hq.groups; delete hq.mailDone; delete hq.slackSet;
-app.listen(PORT, async () => {
-  console.log(`Team HQ on http://localhost:${PORT}${PUBLIC_URL ? '  public: ' + PUBLIC_URL : ''}  sign-in: ${AUTH() ? 'Google' : process.env.HQ_PASSWORD ? 'password' : 'open'}`);
+app.listen(PORT, HOST, async () => {
+  console.log(`Team HQ on http://${HOST.includes(':') ? `[${HOST}]` : HOST}:${PORT}  AI team: /bots/${PUBLIC_URL ? '  public: ' + PUBLIC_URL : ''}  sign-in: ${AUTH() ? 'Google' : process.env.HQ_PASSWORD ? 'password' : 'open'}`);
   if (!LIVE) { loadDemo(); setInterval(() => simOn && randomSim(), 11000); console.log('No tokens set — running the demo workspace.'); return; }
   await fullSync();
   console.log(`Synced: ${db.workers.length} people, ${db.tasks.length} tasks. Mode:`, db.mode);
