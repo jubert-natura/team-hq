@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="same-origin"><title>My AI connection · Team Bot</title>
+<link rel="stylesheet" href="/bots/bots.css"><link rel="stylesheet" href="/bots/personal.css">
+<script type="module" src="/bots/js/personal.js"></script>
+</head>
+<body>
+<main class="personal">
+  <nav class="row between wrap" aria-label="Workspace"><a href="/">← Human HQ</a><div class="row gap wrap"><a href="/bots/">Headquarters</a><a href="/bots/guide.html">User guide</a><button id="theme" class="btn" type="button">Change theme</button></div></nav>
+  <header><p class="eyebrow">TEAM BOT / PERSONAL WORKSPACE</p><h1>My AI connection</h1><p class="muted">Your HQ identity. Your AI account. Shared team skills.</p><p id="identity">Checking your HQ session…</p></header>
+  <p id="message" role="status" aria-live="polite"></p>
+  <div class="personal-grid">
+    <section class="personal-panel" aria-labelledby="connectionTitle">
+      <h2 id="connectionTitle">Connect your API account</h2><p id="connection" class="muted">Loading…</p>
+      <p class="small muted">Human HQ sign-in identifies you; it does not connect an AI provider. Enter your own API credentials below. API usage follows your provider’s billing and limits. Saving clears previous verification.</p>
+      <form id="accountForm" autocomplete="off">
+        <label>Provider<select id="provider" required><option value="openai">OpenAI</option><option value="anthropic">Claude / Anthropic</option></select></label>
+        <label>Exact model ID<input id="model" required maxlength="120" placeholder="Model ID from your provider console" spellcheck="false" autocapitalize="none"></label>
+        <label>Your API key<input id="apiKey" type="password" required autocomplete="new-password" spellcheck="false" autocapitalize="none" placeholder="Paste your own API key"></label>
+        <button class="btn btn-primary" type="submit">Save my connection</button>
+      </form>
+      <div class="row gap wrap"><button id="verify" type="button" class="btn">Verify my connection</button><button id="disconnect" type="button" class="btn">Disconnect</button></div>
+      <p class="small muted">Verification makes a small, billable API request. Keys are encrypted on this HQ server and never returned to the browser, included in task prompts, or shared with teammates. There is no fallback to the owner’s CLI login.</p>
+      <p class="small"><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI API keys</a> · <a href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener noreferrer">Claude API keys</a></p>
+    </section>
+    <section class="personal-panel" aria-labelledby="taskTitle">
+      <h2 id="taskTitle">Give a bot a task</h2><p class="muted small">Uses the selected bot’s approved prompt, enabled skills, and shared notes. Creating saves the brief; Run starts the AI.</p>
+      <form id="taskForm">
+        <label>Title<input id="title" required maxlength="120" placeholder="The result you want"></label>
+        <label>Available bot<select id="bot" required></select></label>
+        <label>Project<input id="project" required maxlength="80" placeholder="Project name"></label>
+        <label>Acceptance criteria<textarea id="criteria" required minlength="10" maxlength="2000" rows="5" placeholder="Describe the brief, output format, facts to use and how you will review it."></textarea></label>
+        <button class="btn btn-primary" type="submit">Create task</button>
+      </form>
+    </section>
+  </div>
+  <section class="personal-panel"><h2>My task history</h2><p id="taskScope" class="muted small">Your drafts and review decisions.</p><div id="tasks"></div></section>
+  <section id="accessPanel" class="personal-panel" hidden><h2>Teammate access</h2><p id="authStatus" class="muted"></p><p class="small muted">Approve people already in the real Human HQ team. They sign in through Human HQ, open AI team, and connect their own API account. Approval grants access to the shared bot instructions and selected knowledge.</p><div id="access"></div></section>
+</main>
+</body></html>

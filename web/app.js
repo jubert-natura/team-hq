@@ -109,6 +109,7 @@ function rNav() {
   // team-wide settings are the owner's; everyone else doesn't see them
   const admin = !db.me || db.me.admin;
   $('#mgmtWrap').hidden = !admin;
+  const aiLink = $('#aiTeamLink'); if (aiLink) aiLink.style.display = ''; // Shared HQ session; AI workspace checks explicit approval.
   $('#navMgmt').innerHTML = admin ? item('automations', 'Automations') + item('integrations', 'Integrations') : '';
   // who is signed in, with Sign out
   const mc = $('#mecard'), me = OWNER();

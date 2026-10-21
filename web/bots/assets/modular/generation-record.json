@@ -1,0 +1,213 @@
+{
+  "provider": "Higgsfield",
+  "created": "2026-10-21",
+  "timezone": "Asia/Manila",
+  "quoted_total_credits": 10,
+  "assets": [
+    {
+      "file": "office-empty.png",
+      "job_id": "5497294d-dcdf-4e1e-a5b1-0bfdec1d1108",
+      "status": "completed",
+      "quoted_credits": 1,
+      "params": {
+        "model": "gpt_image_2_5",
+        "aspect_ratio": "3:2",
+        "resolution": "2k",
+        "quality": "medium",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "95f5f615-ac7d-489a-a4ca-180136bb8fa6"
+          }
+        ],
+        "prompt": "Make a reusable EMPTY office background plate for the same isometric AI headquarters as the reference, keeping exactly its warm polished matte miniature 3D style, camera direction and elevated isometric view, ivory floor, oak, lavender, abundant plants, soft daylight. Important: remove ALL robots, humans, foreground workstations, computers, chairs, low partitions, rugs, central worktable and all foreground furniture. Retain only the rear perimeter wall/window architecture, back-left lounge against the wall, rear round meeting table and rear shelving/plants. The lower 65 percent of the room must be a clean broad uninterrupted empty warm ivory floor plane, with no desks or objects, suitable for app code placing any number of movable desk and robot sprites. No permanent desk bays or grid markers. The room floor is a spacious simple isometric platform, wholly inside frame, with no objects in front of the open placement area. Landscape composition; fixed orthographic 3D product render; no text, interface, words, logos, watermark or people. No UI screenshot. This is the background layer only, not the finished populated office."
+      }
+    },
+    {
+      "file": "robot-idle.png",
+      "job_id": "a4bfec41-765e-4299-a36c-c6bdf4b74279",
+      "status": "completed",
+      "quoted_credits": 1,
+      "params": {
+        "model": "gpt_image_2_5",
+        "aspect_ratio": "1:1",
+        "resolution": "2k",
+        "quality": "medium",
+        "background": "transparent",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "6f05050c-2c15-431d-b9df-6550b0ea5969"
+          }
+        ],
+        "prompt": "Create ONE reusable full-body robot character sprite on a genuinely transparent background with alpha, no background color and no painted checkerboard. It is the same friendly miniature white matte ceramic robot style as the reference portraits. One character only, full body with both feet fully visible, standing upright in a neutral idle pose, arms slightly away from body, hands relaxed, looking toward the viewer at three-quarter angle, elevated isometric office camera around 30 degrees downward, showing top of head and shoes. Small bright mint #75FFE6 headset/shoulder accents, a tiny cool azure #5566FF chest light, glossy dark navy/near-black rounded face screen, two simple luminous cyan oval eyes. Consistent proportions: rounded large head, compact torso, short rounded legs, mitten hands. Soft warm studio light from upper left, ambient material shading, NO floor or cast ground shadow, no props, no furniture, no chair, no screens, no text, no names, no logos. Keep the entire character inside the central 76 percent of the square canvas with equal generous transparent margins on all sides and feet baseline 88 percent down the canvas. Premium polished miniature 3D game sprite; must match the robots in the reference but show one neutral reusable full-body character, not a portrait sheet. Pose should allow gentle idle bobbing and walking translation in app code."
+      }
+    },
+    {
+      "file": "desk-base.png",
+      "job_id": "0d7f74ea-1be9-4300-8245-dd78bd82ba6e",
+      "status": "completed",
+      "quoted_credits": 1,
+      "params": {
+        "model": "gpt_image_2_5",
+        "aspect_ratio": "1:1",
+        "resolution": "2k",
+        "quality": "medium",
+        "background": "transparent",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "95f5f615-ac7d-489a-a4ca-180136bb8fa6"
+          }
+        ],
+        "prompt": "Create ONE isolated reusable office desk/workstation prop sprite in exactly the same warm matte miniature 3D isometric style as the reference. Genuinely transparent alpha background, no painted checkerboard, no floor tile/platform or room. Single compact light oak rectangular standing workstation, seen from fixed elevated isometric camera about 30 degrees downward, matching the office reference camera with visible desktop and two front legs. Front edge diagonal from lower-left toward lower-right. Back of the desk holds two small monitor screens with only abstract blue/azure shapes, no readable text. A pale keyboard and small mouse are on the front edge, one tiny mint ceramic plant pot on the side, one slim lavender modesty panel underneath. Leave the open front/left working position clear so a separately drawn robot can stand and reach the keyboard. NO robot, NO human, NO chair, NO large cubicle wall or divider hiding the desk, NO background, no cast ground shadow, no environment. Full object and legs entirely inside central 80 percent of square canvas with transparent margin; bottom leg baseline about 88 percent. Warm soft key light from upper-left, matching ivory/oak/lavender office materials, small #75FFE6 and #5566FF accents. Clean silhouette suitable for overlapping composition and reuse for any number of bots. No interface, logo, label or watermark."
+      }
+    },
+    {
+      "file": "floor-tile.png",
+      "job_id": "2a650bd2-cc19-4135-ba2b-6845c719b02c",
+      "status": "completed",
+      "quoted_credits": 1,
+      "params": {
+        "model": "gpt_image_2_5",
+        "aspect_ratio": "1:1",
+        "resolution": "2k",
+        "quality": "medium",
+        "background": "transparent",
+        "count": 1,
+        "prompt": "One reusable isometric FLOOR TILE sprite for an expandable miniature office game. Exact single flat rhombus/diamond shape with vertices at (0%,50%), (50%,25%), (100%,50%), (50%,75%) on a square canvas. Transparent alpha outside this diamond. This is ONLY a top surface: warm pale ivory office flooring matching a softly lit cream miniature 3D office. Very subtle evenly toned ivory stone, no dramatic grain, no dirt, no objects, no border line, no bevel, no visible thickness, no underside, no cast shadow, no glow. The four diamond edges must visually meet identical neighboring copies so multiple copies form a continuous uniform flat floor; same color at all four edges, no vignette, no light gradient. Orthographic elevated isometric camera. Make the surface almost solid warm off-white #F5EEE3 with restrained matte microtexture. One diamond only, centered, with full width fitting exactly across canvas; no UI, grid markers, words, arrows, labels, furniture, robots, frame or watermark. Genuinely transparent outside the diamond, do not paint a checkerboard."
+      }
+    },
+    {
+      "file": "desk-views.png",
+      "job_id": "f231369b-0771-4295-bca9-ea7dfea517f2",
+      "status": "completed",
+      "quoted_credits": 1,
+      "params": {
+        "model": "gpt_image_2_5",
+        "aspect_ratio": "1:1",
+        "resolution": "2k",
+        "quality": "medium",
+        "background": "transparent",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "0d7f74ea-1be9-4300-8245-dd78bd82ba6e"
+          }
+        ],
+        "prompt": "Create a GAME SPRITE ATLAS showing exactly the SAME oak computer desk prop from the reference from FOUR directions, one view per quadrant of a strict equal 2 by 2 square grid. This is a turntable of ONE IDENTICAL object, not four different desk designs. Rotate the complete object around its vertical axis by 90 degrees between quadrants while camera elevation stays fixed at 30 degrees downward with orthographic projection. Upper-left front-left view; upper-right front-right view (90-degree turn); lower-left rear-right view (180-degree turn); lower-right rear-left view (270-degree turn). Each desk has identical light oak top, monitor arrangement, keyboard, little mint plant pot and slim lavender panel. Show the appropriate monitor backs in rear views. Keep identical scale, material, lighting, bounding-box size and grounding height in all cells. In each quadrant, place the FULL object centered inside an 84% safe region, feet baseline at 90% of that cell. Generous transparent gutters around each object so no pixels cross cell boundaries. Entire background and gutters genuinely transparent alpha. No room, floor, tile, cast shadow, glow, robots, people or chair. NO grid lines, labels, numbers, headings, borders or text. Each view is a separately usable isolated transparent prop sprite, exact quadrant layout for CSS background-position. Polished miniature 3D office style matching reference."
+      }
+    },
+    {
+      "file": "robot-actions.png",
+      "job_id": "0b8cfc1b-11d3-42fe-84c4-4a915a9a4450",
+      "status": "completed",
+      "quoted_credits": 1,
+      "params": {
+        "model": "gpt_image_2_5",
+        "aspect_ratio": "2:3",
+        "resolution": "2k",
+        "quality": "medium",
+        "background": "transparent",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "a4bfec41-765e-4299-a36c-c6bdf4b74279"
+          }
+        ],
+        "prompt": "Create a precise GAME CHARACTER SPRITE ATLAS of the exact same mint-and-white miniature robot in the reference. One sheet, exactly FOUR equal columns and SIX equal rows: 24 full-body robot frames total. Transparent alpha background, no painted checkerboard, no floor, no shadows, absolutely no glow, labels, text, grid lines, borders, arrows or props. Reproduce the identical robot design and proportions in every cell. Camera is fixed orthographic elevated isometric, about 30 degrees downward. Column directions are consistent in EVERY row: column 1 front-left three-quarter; column 2 front-right three-quarter; column 3 back-right three-quarter; column 4 back-left three-quarter. Back views must show the back of the head and torso, not a face. Row 1: neutral idle, eyes open, arms lowered. Row 2: same idle pose, eyes blink closed (back views remain same back head). Row 3: working pose A, both forearms forward at waist height toward an unseen desk, left wrist slightly higher. Row 4: working pose B, exact same body/feet as row 3 but right wrist slightly higher and left lower, for typing loop. Row 5: walk step A, left foot slightly forward/right foot back, natural opposite arm swing. Row 6: walk step B, right foot slightly forward/left foot back, opposite arm swing. Each cell is a square. All full bodies including feet fit within each cell's central 76 percent with matching head size, root position, centered x and feet baseline at 88 percent of each cell. Keep safe transparent gutters; NO sprite touches another cell. Fixed lighting upper-left, consistent matte white material, bright mint headset/shoulders, tiny azure chest light, glossy dark face with cyan oval eyes. Six action rows and four direction columns must align for frame switching with no camera or scale change. This is not a collage of portraits; it is a regular aligned full-body animation sprite sheet."
+      }
+    },
+    {
+      "file": "floor-texture.png",
+      "job_id": "108e58fa-df24-468b-88d3-b9c0ac693b39",
+      "status": "completed",
+      "quoted_credits": 1,
+      "params": {
+        "model": "gpt_image_2_5",
+        "aspect_ratio": "1:1",
+        "resolution": "2k",
+        "quality": "medium",
+        "background": "opaque",
+        "count": 1,
+        "prompt": "A seamless tileable floor MATERIAL TEXTURE only, orthographic straight top-down view. Uniform pale warm ivory matte office stone flooring, target color #F5EEE3, extremely subtle evenly distributed fine stone microtexture. The whole square is filled edge to edge with identical material, opaque. No diamond shape, no tile outline, no grout lines, no geometric grid, no room, objects, shadows, gradients, illumination falloff, vignette, bevel, dark seams, text or logos. All four edges match for repeating seamlessly in both horizontal and vertical directions. Keep color and brightness even across the entire image. This square texture will be projected onto a mathematically generated isometric floor plane by application code; therefore do NOT render the perspective or floor shape into this image. Clean low-contrast surface, almost solid warm ivory with very restrained microtexture."
+      }
+    },
+    {
+      "file": "chair-views.png",
+      "job_id": "bae2a2cf-2008-44b3-89c8-224e8a400b1f",
+      "status": "completed",
+      "quoted_credits": 1,
+      "params": {
+        "model": "gpt_image_2_5",
+        "aspect_ratio": "1:1",
+        "resolution": "2k",
+        "quality": "medium",
+        "background": "transparent",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "95f5f615-ac7d-489a-a4ca-180136bb8fa6"
+          },
+          {
+            "role": "image",
+            "value": "0d7f74ea-1be9-4300-8245-dd78bd82ba6e"
+          }
+        ],
+        "prompt": "One transparent GAME PROP SPRITE ATLAS of a single reusable OFFICE CHAIR from FOUR perspectives, strict equal 2 by 2 quadrant layout. Match the warm matte miniature 3D isometric office style and scale of the reference desk and headquarters. Design ONE lavender upholstered ergonomic desk chair with a pale ivory frame, low simple light oak armrests, gently curved cushioned backrest, visible seat cushion, and a compact dark-grey five-spoke wheeled base. No headrest. Empty chair only, NO robot or human. Four views of the SAME identical chair, not different designs. Fixed orthographic camera elevated 30 degrees downward; rotate chair around its vertical axis: top-left front-left three-quarter view, top-right front-right view (must be distinct/opposite facing), bottom-left rear-right view with the back of backrest facing camera, bottom-right rear-left view. Front views must clearly show the seat cushion and backrest front; rear views show backrest rear. Same scale and foot baseline in each cell, full chair entirely inside central 80 percent of each cell, wheels baseline at 88 percent of cell height. Transparent alpha outside each chair and in wide gutters. No room, floor, platform, cast shadow, glow, desk, computer, robot, text, labels, borders, grid lines or watermark. Soft warm light from upper-left; polished clean silhouette suitable for placing a separately rendered seated robot on the chair."
+      }
+    },
+    {
+      "file": "robot-seated.png",
+      "job_id": "3798402e-7081-4a25-bf96-0eff08ded938",
+      "status": "completed",
+      "quoted_credits": 1,
+      "params": {
+        "model": "gpt_image_2_5",
+        "aspect_ratio": "1:1",
+        "resolution": "2k",
+        "quality": "medium",
+        "background": "transparent",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "a4bfec41-765e-4299-a36c-c6bdf4b74279"
+          },
+          {
+            "role": "image",
+            "value": "bae2a2cf-2008-44b3-89c8-224e8a400b1f"
+          }
+        ],
+        "prompt": "Create a seated-robot ANIMATION SPRITE ATLAS, exact equal FOUR columns by FOUR rows, 16 full-body frames. Genuinely transparent alpha outside each robot and in gutters. Use the exact mint-and-white robot design from reference 1. Reference 2 is the matching office chair ONLY to establish a plausible seated pose: do NOT draw any chair pixels into this sprite sheet. Each robot must actually be SITTING on an invisible seat: thighs near horizontal, both knees bent about 90 degrees, shins vertical/downward and both feet visible below, torso upright, pelvis at a consistent seated anchor. Not standing, not kneeling, not squatting. FULL body including bent legs and feet within each cell. Fixed elevated orthographic isometric camera around 30 degrees downward, consistent proportions/material/light. Column 1 front-left three-quarter view, column 2 front-right opposite three-quarter view, column 3 rear-right view showing back of head, column 4 rear-left opposite rear view. All direction views remain seated with bent knees. Row 1 seated idle, hands resting loosely on lap, eyes open. Row 2 same pose and anchor, blink eyes closed. Row 3 seated typing pose A: forearms horizontal extended toward an invisible keyboard at elbow height, left wrist slightly raised/right lower. Row 4 same seated typing pose B with right wrist raised/left lower. There is NO keyboard, desk, chair, floor, cast shadow, halo, props or environment in the output; these are supplied by other layers. Keep same head size, pelvis position, feet baseline and scale in all cells, character centered in central 80 percent of each cell with wide transparent margins. No frame border, text, labels, numbering, logos or grid lines. Same matte white ceramic body, mint accents, navy face, cyan oval eyes and small azure chest light."
+      }
+    },
+    {
+      "file": "scene-support.png",
+      "job_id": "0bc102e4-8541-49fc-b920-d23eb8c7e385",
+      "status": "completed",
+      "quoted_credits": 1,
+      "params": {
+        "model": "gpt_image_2_5",
+        "aspect_ratio": "1:1",
+        "resolution": "2k",
+        "quality": "medium",
+        "background": "transparent",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "95f5f615-ac7d-489a-a4ca-180136bb8fa6"
+          }
+        ],
+        "prompt": "Create one GAME SCENE PROP ATLAS, exactly FOUR columns and FOUR rows of equal cells, 16 isolated assets, genuinely transparent background and gutters. Match the warm miniature 3D isometric office reference: ivory/oak/lavender, soft daylight, fixed elevated orthographic camera 30 degrees down. Each asset entirely within its cell, centered with generous margins, no contact shadow/floor/background/grid/text/labels. Row 1: SAME long rectangular central collaboration oak table from four quarter-turn views front-left, front-right, rear-right, rear-left, with a laptop, small book stack, scattered papers and tiny tabletop plant on it, no chairs or people. Row 2: SAME generic stylized adult human office owner from four quarter-turn views front-left, front-right, rear-right, rear-left, short dark hair, navy sweater, grey trousers, holding coffee mug with both hands, standing full body. Row 3 cell 1: low lavender fabric office partition front view; cell 2 same partition rear view; cell 3 low oak bookshelf room divider with books front view; cell 4 same bookshelf divider rear view. Row 4 cell 1: small leafy potted plant in ivory pot; cell 2: tall leafy potted plant in ivory pot; cell 3: flat lavender rectangular rug in isometric view; cell 4: flat pale coral rectangular rug in isometric view. Follow the exact 4 by 4 cell layout. Each object readable and isolated for reusable layered game scene composition. Same lighting and perspective throughout. No robots, no enclosing office walls, no desk workstations, no lettering."
+      }
+    }
+  ]
+}

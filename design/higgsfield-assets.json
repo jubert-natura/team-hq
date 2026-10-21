@@ -1,0 +1,46 @@
+{
+  "created": "2026-10-21",
+  "provider": "Higgsfield",
+  "assets": [
+    {
+      "file": "web/bots/assets/office-scene.png",
+      "job_id": "95f5f615-ac7d-489a-a4ca-180136bb8fa6",
+      "quoted_credits": 1,
+      "params": {
+        "model": "gpt_image_2_5",
+        "aspect_ratio": "3:2",
+        "count": 1,
+        "resolution": "2k",
+        "quality": "medium",
+        "medias": [
+          {
+            "role": "image",
+            "value": "334e6b32-6c59-4535-a62b-5bae7459ecb2"
+          }
+        ],
+        "prompt": "Create the clean illustrated scene ONLY for the center canvas of this Team Bot AI headquarters web app, using the attached screenshot as composition and style reference. Remove ALL interface: no sidebar, header, right panel, cards, labels, badges, words, logos, watermark, numbers or controls. Fill the entire landscape 3:2 image with one polished premium 3D isometric miniature office dollhouse, bright natural window light, warm ivory floor, light oak desks and shelving, lavender upholstery and dividers, abundant lush small green plants. Keep four distinctive friendly white robot teammates at four workstations: purple accent robot at left-middle (21% across,49% down), orange accent robot at right-middle (74%,46%), emerald accent robot lower-left (38%,67%), purple accent robot lower-right (65%,68%). A human owner stands around the central collaboration desk (50%,36%). Back-left lounge with cream couch, round rear meeting table, low office partitions, laptop screens with abstract UI shapes only, books and warm quiet studio details. Preserve open space around the robots for app-added clickable labels, and clear separation between workstations. Crisp tasteful Pixar-like product render, matte materials, soft ambient shadows, refined cozy environment, no text anywhere. Entire cutaway floor inside frame with comfortable edges. This must be an original web app background illustration based on the reference aesthetic, not a screenshot or flat UI."
+      }
+    },
+    {
+      "file": "web/bots/assets/bot-portraits.png",
+      "job_id": "6f05050c-2c15-431d-b9df-6550b0ea5969",
+      "quoted_credits": 1,
+      "params": {
+        "model": "gpt_image_2_5",
+        "aspect_ratio": "1:1",
+        "count": 1,
+        "resolution": "2k",
+        "quality": "medium",
+        "background": "opaque",
+        "medias": [
+          {
+            "role": "image",
+            "value": "95f5f615-ac7d-489a-a4ca-180136bb8fa6"
+          }
+        ],
+        "prompt": "Create a coordinated 2 by 2 avatar portrait contact sheet for the four cute robot teammates from the reference office scene. Four equal square panels separated exactly at the horizontal and vertical center, no borders, no text or labels. Each panel uses a very pale ivory background and a centered chest-up portrait filling the panel, with comfortable equal margins. Upper-left: white robot, violet headset/accents, glossy navy face with two glowing cyan oval eyes, looks forward with friendly slight tilt (planner). Upper-right: matching white robot, burnt orange headset/accents, same glossy navy face, looking slightly to left (builder). Lower-left: matching white robot, emerald green headset/accents, same face, thoughtful slight tilt (researcher). Lower-right: matching white robot with deeper lavender accents and same face, calm confident pose (reviewer). Same miniature matte 3D material, warm soft window lighting, premium polished friendly product render as the office reference. These are four distinct consistent robot portraits, no humans, no desks, no interface, no logos, no lettering. Exact equal quadrant layout so the web app can use CSS background-position for each portrait."
+      }
+    }
+  ],
+  "status": "Both jobs completed; files downloaded and visually inspected."
+}

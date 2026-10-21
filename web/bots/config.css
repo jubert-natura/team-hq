@@ -1,0 +1,138 @@
+.config-text { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 25rem; overflow: auto; line-height: 1.65; }
+.skill-card { border: 1px solid var(--line, #d2d2d2); background: var(--surface, #fff); padding: 16px; margin-block: 14px; border-radius: 12px; }
+.skill-card h4 { margin: 0; overflow-wrap: anywhere; }
+.skill-card summary { cursor: pointer; }
+.bot-card-foot { flex-wrap: wrap; gap: 8px; }
+.bot-card-foot > .row { flex-wrap: wrap; }
+/* On / Off switches use the palette in both themes: mint for on, dark grey for off */
+.btn[role="switch"][aria-checked="true"] { border-color: #45a593; background: #75ffe6; color: #111111; }
+.btn[role="switch"][aria-checked="false"] { background: #262626; color: #ffffff; border-color: var(--line-strong, #777); }
+.pill-off { background: #262626; color: #ffffff; }
+:root[data-theme="dark"] .pill-off { background: #3a3a3a; }
+.dot-off { background: var(--grey-dot, #777); }
+
+/* ---- slider switch (lib.slider) ---- */
+.slider-field { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+.slider-text { font-size: 13px; font-weight: 600; color: var(--muted); min-width: 22px; }
+.switch.switch-sm { width: 40px; height: 24px; }
+.switch.switch-sm .switch-knob { top: 3px; left: 3px; width: 18px; height: 18px; }
+.switch.switch-sm[aria-checked="true"] .switch-knob { transform: translateX(16px); }
+.switch[aria-checked="true"] + .slider-text { color: var(--ink); }
+.switch:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.switch:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ---- actions dropdown (lib.actionMenu) ---- */
+.menu-wrap { position: relative; display: inline-block; }
+.menu-btn-trigger .icon { transition: transform .15s; }
+.menu-wrap.open .menu-btn-trigger .icon { transform: rotate(180deg); }
+.menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; min-width: 196px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); display: grid; gap: 2px; }
+.menu-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 0; border-radius: 8px; background: none; color: var(--ink); font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; white-space: nowrap; }
+.menu-item .icon { color: var(--muted); }
+.menu-item:hover, .menu-item:focus-visible { background: var(--surface-hover); outline: none; }
+.menu-item.danger { color: var(--red); }
+.menu-item.danger .icon { color: var(--red); }
+/* in the HQ drawer (a scrolling panel) and near the bottom of cards, open upwards */
+.drawer-tools .menu { top: auto; bottom: calc(100% + 6px); }
+.drawer-tools { padding-top: 10px; border-top: 1px solid var(--line-2); }
+
+/* ---- Team overview: compact bot cards ----
+   Columns never go narrower than a card can lay out (290px, or the full width on small screens), cards may shrink
+   (min-width: 0) and every row wraps, so nothing spills into the next card. */
+.page > * { min-width: 0; }
+.bot-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); align-items: start; }
+.bot-card { min-width: 0; }
+.bot-card.compact { gap: 12px; padding: 16px 18px; align-content: start; }
+.bot-card.compact .bot-card-head { padding-bottom: 12px; align-items: flex-start; flex-wrap: wrap; gap: 8px 12px; }
+.bot-card.compact .bot-card-head .grow { flex: 1 1 140px; min-width: 0; }
+.bot-card.compact .bot-card-head h3 { font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bot-card.compact .bot-card-head .pill { flex: none; margin-top: 2px; }
+.one-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bot-card-task { display: grid; gap: 2px; font-weight: 500; min-width: 0; }
+.bot-card-task a, .bot-card-task span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bot-card-more { min-width: 0; }
+.bot-card-more summary { cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--link); width: fit-content; }
+.bot-card-more[open] summary { margin-bottom: 10px; }
+.bot-card-more .bot-card-body { padding: 10px 12px; border-radius: 10px; background: var(--bg-soft); gap: 10px; }
+.bot-card-more dd { overflow-wrap: anywhere; }
+.bot-card.compact .bot-card-foot { justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--line-2); }
+.bot-card.compact .bot-card-foot > .row { margin-left: auto; gap: 12px; }
+.add-card { min-height: 0; align-self: stretch; }
+
+/* ---- Settings › Bots: two panes (bot list | selected bot) ---- */
+.panel { overflow-wrap: break-word; }
+.panel-head p { margin-top: 4px; }
+/* no overflow:hidden here, so skill action menus are never clipped; the list rounds its own corners */
+.bc-layout { display: grid; grid-template-columns: 264px minmax(0, 1fr); border: 1px solid var(--line); border-radius: 12px; }
+.bc-list { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--surface-2); border-right: 1px solid var(--line); border-radius: 11px 0 0 11px; min-width: 0; }
+.bc-list ul { display: grid; gap: 2px; }
+.bc-item { display: flex; align-items: center; gap: 6px; padding: 2px 6px 2px 2px; border-radius: 10px; }
+.bc-item.on { background: var(--selected); box-shadow: inset 3px 0 0 var(--brand); }
+.bc-link { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 7px 8px; border-radius: 8px; color: var(--ink); }
+.bc-link:hover { text-decoration: none; background: var(--surface-hover); }
+.bc-link .grow { min-width: 0; }
+.bc-link b, .bc-link .small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc-item .slider-field { flex: none; }
+.bc-add { align-self: flex-start; margin: 2px 6px 4px; }
+.bc-detail { display: grid; gap: 14px; align-content: start; padding: 18px 20px; min-width: 0; }
+.bc-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bc-head h3 { font-size: 20px; }
+.bc-texts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.bc-text { min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.bc-text h4 { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.bc-text p { font-size: 14px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.bc-text.open p { display: block; max-height: 22rem; overflow: auto; }
+.bc-text .link-btn { margin-top: 6px; font-size: 13px; }
+.bc-skills-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line-2); }
+.bc-skills-head h4 { margin: 0; font-size: 16px; }
+.skill-list { display: grid; gap: 8px; }
+.skill-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.skill-main { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.skill-main summary { width: fit-content; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--link); }
+.skill-main .config-text { margin-top: 6px; font-size: 14px; }
+.skill-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex: none; }
+.skill-main .badge { height: 22px; font-size: 12px; }
+.badge-src.src-ready { background: var(--green-bg); color: var(--green); }
+.badge-src.src-needs_tools, .badge-src.src-unreviewed { background: var(--amber-bg); color: var(--amber); }
+.badge-src.src-incompatible { background: var(--red-bg); color: var(--red); }
+.skill-block { display: flex; gap: 6px; align-items: flex-start; color: var(--amber); line-height: 1.45; }
+.skill-block .icon { margin-top: 2px; flex: none; }
+.skill-src { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 6px 0 0; font-size: 13px; line-height: 1.5; }
+.skill-src dt { color: var(--muted); font-weight: 600; }
+.skill-src dd { margin: 0; overflow-wrap: anywhere; }
+.bc-starters { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bc-starters > .small { margin-right: 4px; }
+.chip-btn { height: 30px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+.bc-note { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: var(--bg-soft); line-height: 1.55; }
+.bc-note .icon { margin-top: 3px; flex: none; }
+.bc-note .link-btn { display: inline; font-size: inherit; }
+.bc-note .link-btn .icon { display: inline; vertical-align: -2px; margin: 0 0 0 2px; }
+
+/* ---- Settings › Add a bot: dense template grid ---- */
+.template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 10px; }
+.template { width: 100%; height: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; text-align: left; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.template:hover { border-color: var(--brand); background: var(--brand-soft); }
+.template .grow { min-width: 0; }
+.template .small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.template .badge { margin: 0; }
+.template-plus { color: var(--muted); flex: none; }
+
+/* ---- Settings › Workspace facts in two columns ---- */
+.facts.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
+.facts.cols-2 > div { grid-template-columns: 136px minmax(0, 1fr); }
+
+@media (max-width: 1100px) {
+  .bc-layout { grid-template-columns: 224px minmax(0, 1fr); }
+  .bc-texts { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .bc-layout { grid-template-columns: minmax(0, 1fr); }
+  .bc-list { border-right: 0; border-bottom: 1px solid var(--line); border-radius: 11px 11px 0 0; }
+  .bc-list ul { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  .bc-detail { padding: 16px 14px; }
+  .skill-row { flex-direction: column; }
+  .skill-actions { justify-content: flex-start; }
+  .skill-src { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .skill-src dd { margin-bottom: 4px; }
+  .facts.cols-2 { grid-template-columns: minmax(0, 1fr); }
+  .facts.cols-2 > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
