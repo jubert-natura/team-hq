@@ -1,6 +1,12 @@
 {
   "name": "Team HQ",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:1-20-bookworm",
+  // Codespaces forwards the public HTTPS port from inside the container. Listen for it, and trust its
+  // X-Forwarded-Proto so sign-in cookies are Secure and teammates can save API keys. Nothing else can reach the container.
+  "containerEnv": {
+    "HOST": "0.0.0.0",
+    "HQ_TRUST_PROXY": "loopback, uniquelocal"
+  },
   "postCreateCommand": "npm install",
   "postAttachCommand": "npm run dev",
   "forwardPorts": [3000],
@@ -11,7 +17,10 @@
     "SLACK_BOT_TOKEN": { "description": "Slack Bot User OAuth Token (xoxb-...)" },
     "CLICKUP_API_TOKEN": { "description": "ClickUp personal API token (pk_...)" },
     "OWNER_EMAIL": { "description": "Your email in Slack and ClickUp" },
-    "HQ_PASSWORD": { "description": "Password for the HQ web page" }
+    "GOOGLE_CLIENT_ID": { "description": "Google OAuth client ID. Needed for teammates to sign in" },
+    "GOOGLE_CLIENT_SECRET": { "description": "Google OAuth client secret" },
+    "SLACK_USER_TOKEN": { "description": "Optional: your Slack user token (xoxp-...) for status and channels" },
+    "HQ_PASSWORD": { "description": "Owner-only fallback password while Google sign-in is off" }
   },
   "customizations": { "vscode": { "extensions": ["dbaeumer.vscode-eslint"] } }
 }

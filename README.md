@@ -28,10 +28,24 @@ With no tokens set, the app runs a **demo workspace** so you can try it straight
    | `CLICKUP_API_TOKEN` | ClickUp → avatar → **Settings → Apps → API Token** (`pk_…`) |
    | `OWNER_EMAIL` | Your email, the same in Slack and ClickUp |
    | `HQ_PASSWORD` | Any password. It protects the page once the port is public |
+   | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Needed for teammates. See "Share it with teammates" below |
+   | `SLACK_USER_TOKEN` | Optional, `xoxp-…`. See `.env.example` |
 
    Codespaces only loads secrets when it starts. After adding them, go to **Codespaces menu → Stop codespace**, then open it again. Or run **Rebuild container**.
 4. **Make the port public so ClickUp webhooks can reach you.** In the **Ports** tab, right-click port 3000 → **Port visibility → Public**. The server registers its ClickUp webhook itself on start. If the port stays private, HQ still works but checks ClickUp every 60 seconds instead of updating instantly.
 5. Open the forwarded URL and log in with any username and your `HQ_PASSWORD`.
+
+The dev container sets `HOST=0.0.0.0` and `HQ_TRUST_PROXY=loopback, uniquelocal`, so the server answers the forwarded port and sees its HTTPS.
+
+### Share it with teammates
+`HQ_PASSWORD` is one shared login that acts as the owner, so never give it to teammates. They sign in with Google instead:
+
+1. **Google OAuth client.** Google Cloud console → **APIs & Services**. On the **OAuth consent screen**, choose **Internal** if everyone is in your Google Workspace. Otherwise choose External and add each teammate as a test user. Enable the Google Calendar and Gmail APIs. Under **Credentials → Create credentials → OAuth client ID → Web application**, add the redirect URI `https://<codespace-name>-3000.app.github.dev/auth/google/callback`. The codespace name is in the forwarded URL. A new codespace has a new name, so add its URI too.
+2. Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` as Codespaces secrets, along with `SLACK_BOT_TOKEN` and/or `CLICKUP_API_TOKEN` and `OWNER_EMAIL`. Google sign-in only turns on with a real Slack or ClickUp connection. Restart the codespace.
+3. **Port 3000 → Port visibility → Public**, then send teammates the forwarded URL. Only you and people whose Google email matches a member of your Slack can sign in. Your organization may need to allow public ports.
+4. **AI team:** open `/bots/team.html` and approve each teammate under **Teammate access**. Each person then saves and verifies their own OpenAI or Anthropic API key on that page. Never put teammates' keys in secrets.
+
+Limits: the codespace runs on your account and your Codespaces billing. It is only up while it's running, and it stops after the idle timeout (GitHub **Settings → Codespaces → Default idle timeout**, at most 4 hours). Restarting it keeps the same URL. HQ data, accounts and the encrypted API keys live in the codespace's `data/` folder, so deleting the codespace deletes them. The shared knowledge bridge (`HQ_BOT_BRIDGE`) stays off, because a codespace has no access to the private knowledge repository. For an always-on site, use a real host (Render, Railway, Fly).
 
 ### Slack app (5 minutes)
 1. Go to <https://api.slack.com/apps> → **Create New App → From scratch** and pick your workspace.
